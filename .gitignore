@@ -1,0 +1,4 @@
+.venv
+sna_output
+emails.csv
+__pycache__

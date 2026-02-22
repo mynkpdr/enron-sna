@@ -1,0 +1,12 @@
+{
+  "total_emails": 359219,
+  "total_nodes": 19094,
+  "total_edges": 173899,
+  "n_communities": 31,
+  "density": 0.000954,
+  "avg_clustering": 0.2317,
+  "lcc_nodes": 19031,
+  "lcc_edges": 173861,
+  "date_range_start": "1979-12-31",
+  "date_range_end": "2002-07-12"
+}

@@ -499,16 +499,16 @@ The tooltip repositions itself to stay within the canvas bounds.
 
 ```json
 {
-  "total_emails": 517401,
-  "total_nodes": 36692,
-  "total_edges": 367662,
-  "n_communities": 28,
-  "density": 0.000546,
-  "avg_clustering": 0.4812,
-  "lcc_nodes": 33312,
-  "lcc_edges": 365101,
-  "date_range_start": "1999-11-01",
-  "date_range_end": "2002-06-21"
+  "total_emails": 359219,
+  "total_nodes": 19094,
+  "total_edges": 173899,
+  "n_communities": 31,
+  "density": 0.000954,
+  "avg_clustering": 0.2317,
+  "lcc_nodes": 19031,
+  "lcc_edges": 173861,
+  "date_range_start": "1979-12-31",
+  "date_range_end": "2002-07-12"
 }
 ```
 

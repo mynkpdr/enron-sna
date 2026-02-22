@@ -61,6 +61,7 @@
         grid-template-columns: 276px 1fr 296px;
         height: 100vh;
         overflow: hidden;
+        transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       /* ── HEADER ── */
@@ -192,6 +193,7 @@
       }
       input[type="range"] {
         -webkit-appearance: none;
+        appearance: none;
         width: 100%;
         height: 3px;
         background: var(--border);
@@ -536,15 +538,18 @@
         top: 46px;
         right: 10px;
         z-index: 15;
-        background: rgba(10, 14, 24, 0.9);
+        background: rgba(10, 14, 24, 0.93);
         border: 1px solid var(--accent3);
-        border-radius: 4px;
-        padding: 3px 9px;
+        border-radius: 6px;
+        padding: 6px 12px;
         font-family: var(--font-mono);
         font-size: 9px;
         color: var(--accent3);
         display: none;
-        backdrop-filter: blur(8px);
+        backdrop-filter: blur(10px);
+        max-width: 60vw;
+        word-wrap: break-word;
+        box-shadow: 0 0 16px rgba(168, 85, 247, 0.15);
       }
 
       /* Tooltip */
@@ -648,14 +653,54 @@
         text-transform: uppercase;
       }
 
-      /* Sim bar */
-      #sim-bar {
+      /* Keyboard help overlay */
+      #kbd-help {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        background: rgba(5, 7, 13, 0.88);
+        backdrop-filter: blur(16px);
         display: none;
+        align-items: center;
+        justify-content: center;
       }
-      #sim-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--accent), var(--accent3));
-        border-radius: 2px;
+      #kbd-help.visible {
+        display: flex;
+      }
+      .kbd-panel {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 24px 32px;
+        max-width: 420px;
+        width: 90%;
+      }
+      .kbd-panel h3 {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--accent);
+        margin-bottom: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .kbd-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        font-size: 11px;
+        border-bottom: 1px solid rgba(30, 42, 58, 0.4);
+      }
+      .kbd-key {
+        font-family: var(--font-mono);
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 10px;
+        color: var(--accent);
+      }
+      .kbd-desc {
+        color: var(--muted);
       }
 
       /* SVG */
@@ -724,19 +769,26 @@
         --accent2: #d6455b;
         --accent3: #6b21a8;
         --text: #071124;
+        --muted: #64748b;
         --muted-text: #475569;
         --grid: rgba(6, 182, 212, 0.03);
       }
 
       /* Collapsible sidebars - grid variants applied on #app */
       #app.left-collapsed {
-        grid-template-columns: 56px 1fr 296px;
+        grid-template-columns: 0px 1fr 296px;
       }
       #app.right-collapsed {
-        grid-template-columns: 276px 1fr 56px;
+        grid-template-columns: 276px 1fr 0px;
       }
       #app.both-collapsed {
-        grid-template-columns: 56px 1fr 56px;
+        grid-template-columns: 0px 1fr 0px;
+      }
+      #sidebar-left.collapsed {
+        border-right: none;
+      }
+      #sidebar-right.collapsed {
+        border-left: none;
       }
       #sidebar-left.collapsed > *,
       #sidebar-right.collapsed > * {
@@ -882,6 +934,27 @@
         color: var(--accent);
         text-shadow: 0 0 9px var(--accent);
       }
+      /* Community stats table */
+      .comm-stats-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9px;
+        font-family: var(--font-mono);
+      }
+      .comm-stats-table th {
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        font-size: 8px;
+        padding: 4px 3px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+      .comm-stats-table td {
+        padding: 3px;
+        color: var(--text);
+        border-bottom: 1px solid rgba(30, 42, 58, 0.3);
+      }
     </style>
   </head>
   <body>
@@ -904,7 +977,7 @@
             id="btn-collapse-left"
             title="Collapse left sidebar"
           >
-            ◀
+            &lt;
           </button>
           <button class="btn" id="btn-theme" title="Toggle light theme">
             ☼
@@ -914,7 +987,7 @@
             id="btn-collapse-right"
             title="Collapse right sidebar"
           >
-            ▶
+            &gt;
           </button>
         </div>
         <div class="header-stats">
@@ -957,22 +1030,42 @@
         </div>
 
         <div class="panel-section">
+          <div class="panel-title">Path</div>
+          <label>From</label>
+          <div class="search-wrap">
+            <input type="text" id="path-from" placeholder="name or email…" />
+            <span class="search-icon">⌕</span>
+            <div id="path-from-results"></div>
+          </div>
+          <label>To</label>
+          <div class="search-wrap">
+            <input type="text" id="path-to" placeholder="name or email…" />
+            <span class="search-icon">⌕</span>
+            <div id="path-to-results"></div>
+          </div>
+          <div class="btn-row" style="margin-bottom: 0">
+            <button class="btn" id="btn-path-find">Find Path</button>
+            <button class="btn red" id="btn-path-clear">Clear</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
           <div class="panel-title">Network Filter</div>
           <label
             >Min. Edge Weight (1/N sum, log scale)
-            <span class="slider-val" id="weight-val">0.0</span></label
+            <span class="slider-val" id="weight-val">8.0</span></label
           >
-          <input type="range" id="slider-weight" min="0" max="100" value="0" />
+          <input type="range" id="slider-weight" min="0" max="100" value="29" />
           <label
             >Max. Nodes
-            <span class="slider-val" id="nodes-val">200</span></label
+            <span class="slider-val" id="nodes-val">500</span></label
           >
           <input
             type="range"
             id="slider-nodes"
             min="20"
-            max="1000"
-            value="200"
+            max="500"
+            value="500"
             step="10"
           />
           <label
@@ -988,14 +1081,14 @@
             step="1"
           />
           <label
-            >Spin Speed <span class="slider-val" id="rep-val">3</span></label
+            >Spin Speed <span class="slider-val" id="rep-val">15</span></label
           >
           <input
             type="range"
             id="slider-rep"
             min="0"
             max="20"
-            value="3"
+            value="15"
             step="1"
           />
         </div>
@@ -1025,7 +1118,7 @@
           <div class="toggle-row">
             <span class="toggle-label">Show Labels</span>
             <label class="toggle-switch"
-              ><input type="checkbox" id="tog-labels" checked />
+              ><input type="checkbox" id="tog-labels" />
               <div class="toggle-track"></div>
               <div class="toggle-thumb"></div
             ></label>
@@ -1085,7 +1178,7 @@
         </div>
 
         <div class="panel-section" id="topnodes-panel">
-          <div class="panel-title amber">Top 20 by PageRank</div>
+          <div class="panel-title amber" id="topnodes-title">Top 20</div>
           <div id="top-nodes-list"></div>
         </div>
       </div>
@@ -1104,10 +1197,11 @@
           <button class="tbtn active" id="tb-select">☰ Select</button>
           <button class="tbtn" id="tb-lasso">⬡ Lasso</button>
           <button class="tbtn" id="tb-pan">✥ Pan</button>
-          <button class="tbtn active" id="tb-labels">Ⓐ Labels</button>
+          <button class="tbtn" id="tb-labels">Ⓐ Labels</button>
           <button class="tbtn" id="tb-path">⇄ Path</button>
-          <button class="tbtn" id="tb-role">◎ Roles</button>
           <button class="tbtn" id="tb-png">⬇ PNG</button>
+          <button class="tbtn" id="tb-json">{ } JSON</button>
+          <button class="tbtn" id="tb-help">? Help</button>
         </div>
 
         <div id="sel-badge"></div>
@@ -1132,8 +1226,6 @@
           />
         </svg>
 
-        <div id="sim-bar"><div id="sim-fill"></div></div>
-
         <div id="tooltip"></div>
       </div>
 
@@ -1141,6 +1233,7 @@
       <div id="sidebar-right">
         <div class="right-tabs-head">
           <div class="rtab active" id="rtab-overview">Overview</div>
+          <div class="rtab" id="rtab-analytics">Analytics</div>
           <div class="rtab" id="rtab-selected">Selected</div>
         </div>
         <div id="tab-overview">
@@ -1149,14 +1242,24 @@
             <canvas id="chart-community" height="150"></canvas>
           </div>
 
-          <div class="chart-wrap">
-            <div class="chart-title">Top Communicators</div>
-            <canvas id="chart-top" height="153"></canvas>
-          </div>
-
           <div id="keyword-cloud">
             <div class="chart-title">Subject Keywords</div>
             <div class="cloud-words" id="cloud-words"></div>
+          </div>
+        </div>
+
+        <div id="tab-analytics" style="display: none">
+          <div class="chart-wrap">
+            <div class="chart-title">Email Volume Timeline</div>
+            <canvas id="chart-timeline" height="140"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-title">Degree Distribution (log-log)</div>
+            <canvas id="chart-degdist" height="140"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-title">Community Stats</div>
+            <div id="comm-stats-container"></div>
           </div>
         </div>
 
@@ -1166,6 +1269,19 @@
             <div class="detail-role" id="dd-role">—</div>
             <div class="metric-grid" id="dd-metrics"></div>
             <div class="nbr-title">Neighbours</div>
+            <div
+              class="nbr-list-headers"
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 4px 6px 8px;
+                font-size: 10px;
+                color: var(--muted);
+              "
+            >
+              <div>Contact</div>
+              <div style="text-align: right; min-width: 36px">Edge weight</div>
+            </div>
             <div class="nbr-list" id="dd-neighbours"></div>
           </div>
 
@@ -1173,10 +1289,65 @@
             <div class="multi-title" id="multi-title">0 nodes selected</div>
             <div class="metric-grid" id="multi-metrics"></div>
             <div class="btn-row">
-              <button class="btn" id="btn-focus-sub">Focus Subgraph</button>
-              <button class="btn red" id="btn-clear-sel">Clear</button>
+              <button class="btn" id="btn-focus-sub">⊠ Only Selected</button>
+              <button class="btn red" id="btn-clear-sel">✕ Clear</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keyboard Help Overlay -->
+    <div id="kbd-help">
+      <div class="kbd-panel">
+        <h3>Keyboard Shortcuts</h3>
+        <div class="kbd-row">
+          <span class="kbd-desc">Lasso mode</span><span class="kbd-key">L</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Pan mode</span><span class="kbd-key">P</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Rebuild graph</span
+          ><span class="kbd-key">R</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Fit to view</span
+          ><span class="kbd-key">F</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Toggle labels</span
+          ><span class="kbd-key">H</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Clear selection / Exit</span
+          ><span class="kbd-key">Esc</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Multi-select</span
+          ><span class="kbd-key">Shift + Click</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Pin / Unpin node</span
+          ><span class="kbd-key">Double-click</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Shortest path (click from, click to)</span
+          ><span class="kbd-key">Path Tool or Alt+Click</span>
+        </div>
+        <div class="kbd-row">
+          <span class="kbd-desc">Show this help</span
+          ><span class="kbd-key">?</span>
+        </div>
+        <div style="text-align: center; margin-top: 14px">
+          <button
+            class="btn"
+            onclick="
+              document.getElementById('kbd-help').classList.remove('visible')
+            "
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -1225,7 +1396,7 @@
 
       // ── STATE ────────────────────────────────────────────────────
       const ST = {
-        showLabels: true,
+        showLabels: false,
         topOnly: true,
         showIsolated: false,
         edgeByW: true,
@@ -1233,13 +1404,14 @@
         sel: new Set(),
         pinned: new Set(),
         _dragging: false,
+        isolate: false,
         opts: {
-          maxN: 200,
-          minW: 0.0,
+          maxN: 500,
+          minW: 8.0,
           sz: "pagerank",
           col: "community",
           dist: 38,
-          rep: 3,
+          rep: 15,
         },
       };
       let RAW = {},
@@ -1270,7 +1442,7 @@
         _sphCy = 0;
       let _raf = null,
         _autoSpin = false,
-        _spinSpeed = 0.003;
+        _spinSpeed = 0.015;
       let _dragX0 = 0,
         _dragY0 = 0;
 
@@ -1316,6 +1488,8 @@
         "top_nodes",
         "communities",
         "stats",
+        "timeline",
+        "degree_dist",
       ];
       async function loadAll() {
         for (let i = 0; i < FILES.length; i++) {
@@ -1477,17 +1651,26 @@
       }
 
       // ── TOP LIST ────────────────────────────────────────────────
-      function renderTopList(tn) {
+      function renderTopList() {
         const el = document.getElementById("top-nodes-list");
+        const titleEl = document.getElementById("topnodes-title");
+        const sizeSel = document.getElementById("sel-size");
+        const metricKey = ST?.opts?.sz || "pagerank";
+        const metricLabel =
+          sizeSel?.options?.[sizeSel.selectedIndex]?.textContent || metricKey;
+        if (titleEl) titleEl.textContent = `Top 20 by ${metricLabel}`;
         el.innerHTML = "";
-        (tn || []).slice(0, 20).forEach((n, i) => {
+        ND.slice()
+          .sort((a, b) => (b[metricKey] || 0) - (a[metricKey] || 0))
+          .slice(0, 20)
+          .forEach((n, i) => {
           const d = document.createElement("div");
           d.className = "node-list-item";
           d.id = "nli-" + n.id;
           d.innerHTML = `<span class="node-rank">${i + 1}</span><span class="node-name">${n.id.split("@")[0]}</span><span class="node-badge">${(n.inferred_role || n.role || "").split(" ")[0] || "—"}</span>`;
           d.addEventListener("click", () => focusById(n.id));
           el.appendChild(d);
-        });
+          });
       }
 
       // ── CLOUD ────────────────────────────────────────────────────
@@ -1539,46 +1722,131 @@
           },
         });
       }
-      function renderTopChart(tn) {
-        const t = (tn || []).slice(0, 10);
-        const ctx = document.getElementById("chart-top").getContext("2d");
-        if (RC.top) RC.top.destroy();
-        RC.top = new Chart(ctx, {
-          type: "bar",
+      // ── TIMELINE CHART ──────────────────────────────────────────
+      function renderTimelineChart(tl) {
+        if (!tl || !tl.length) return;
+        const ctx = document.getElementById("chart-timeline").getContext("2d");
+        if (RC.timeline) RC.timeline.destroy();
+        RC.timeline = new Chart(ctx, {
+          type: "line",
           data: {
-            labels: t.map((n) => n.id.split("@")[0]),
+            labels: tl.map((x) => x.period),
             datasets: [
               {
-                label: "Sent",
-                data: t.map((n) => n.sent),
-                backgroundColor: "rgba(0,229,255,.6)",
-              },
-              {
-                label: "Received",
-                data: t.map((n) => n.received),
-                backgroundColor: "rgba(255,77,109,.6)",
+                label: "Emails",
+                data: tl.map((x) => x.email_count),
+                borderColor: "rgba(0,229,255,.8)",
+                backgroundColor: "rgba(0,229,255,.12)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2,
+                borderWidth: 1.5,
               },
             ],
           },
           options: {
             responsive: true,
-            indexAxis: "y",
-            plugins: {
-              legend: { labels: { color: "#94a3b8", font: { size: 9 } } },
-              tooltip: TT,
-            },
+            plugins: { legend: { display: false }, tooltip: TT },
             scales: {
               x: {
-                ticks: { color: "#64748b" },
-                grid: { color: "rgba(30,42,58,.5)" },
+                ticks: { color: "#64748b", font: { size: 8 }, maxRotation: 45 },
+                grid: { display: false },
               },
               y: {
-                ticks: { color: "#94a3b8", font: { size: 9 } },
-                grid: { display: false },
+                ticks: { color: "#64748b" },
+                grid: { color: "rgba(30,42,58,.5)" },
               },
             },
           },
         });
+      }
+
+      // ── DEGREE DISTRIBUTION CHART ─────────────────────────────────
+      function renderDegDistChart(dd) {
+        if (!dd || !dd.length) return;
+        const ctx = document.getElementById("chart-degdist").getContext("2d");
+        if (RC.degdist) RC.degdist.destroy();
+        RC.degdist = new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Degree dist",
+                data: dd
+                  .filter((x) => x.degree > 0 && x.count > 0)
+                  .map((x) => ({
+                    x: Math.log10(x.degree),
+                    y: Math.log10(x.count),
+                  })),
+                backgroundColor: "rgba(168,85,247,.6)",
+                pointRadius: 2.5,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: TT },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "log₁₀(degree)",
+                  color: "#64748b",
+                  font: { size: 9 },
+                },
+                ticks: { color: "#64748b" },
+                grid: { color: "rgba(30,42,58,.5)" },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "log₁₀(count)",
+                  color: "#64748b",
+                  font: { size: 9 },
+                },
+                ticks: { color: "#64748b" },
+                grid: { color: "rgba(30,42,58,.5)" },
+              },
+            },
+          },
+        });
+      }
+
+      // ── COMMUNITY STATS TABLE ─────────────────────────────────────
+      function renderCommStats(comms) {
+        const el = document.getElementById("comm-stats-container");
+        if (!el || !comms || !comms.length) return;
+        const rows = (comms || [])
+          .slice(0, 12)
+          .map(
+            (c) =>
+              `<tr><td style="color:${commColor(c.community_id)}">${c.community_id}</td><td>${c.size}</td><td>${(
+                c.top_members || []
+              )
+                .slice(0, 3)
+                .map((m) => m.split("@")[0])
+                .join(", ")}</td></tr>`,
+          )
+          .join("");
+        el.innerHTML = `<table class="comm-stats-table"><thead><tr><th>ID</th><th>Size</th><th>Top Members</th></tr></thead><tbody>${rows}</tbody></table>`;
+      }
+
+      // ── EDGE ID HELPER ────────────────────────────────────────────
+      function eid(e) {
+        return { s: e.source?.id ?? e.source, t: e.target?.id ?? e.target };
+      }
+
+      // ── JSON EXPORT ───────────────────────────────────────────────
+      function exportJSON() {
+        const data = { nodes: ND, edges: ED };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
+        const a = document.createElement("a");
+        a.download = "enron-sna-export.json";
+        a.href = URL.createObjectURL(blob);
+        a.click();
+        URL.revokeObjectURL(a.href);
       }
 
       // ── SPHERE NETWORK ───────────────────────────────────────────
@@ -1756,15 +2024,16 @@
             ) {
               if (!PATH_START) {
                 PATH_START = d.id;
-                // subtle UX feedback
-                document.getElementById("sel-badge").textContent =
-                  `Path start: ${d.id}`;
-                document.getElementById("sel-badge").style.display = "block";
+                // Show "from" start feedback in badge
+                const sb = document.getElementById("sel-badge");
+                sb.style.maxWidth = "";
+                sb.style.whiteSpace = "";
+                sb.style.lineHeight = "";
+                sb.innerHTML = `<span style="color:var(--amber)">⇄ Path from:</span> <span style="color:var(--accent);font-weight:700">${d.id.split("@")[0]}</span> <span style="color:var(--muted);font-size:9px">— now click the target node</span>`;
+                sb.style.display = "block";
               } else {
                 showPathBetween(PATH_START, d.id);
                 PATH_START = null;
-                setTimeout(() => clearPathHighlight(), 10 * 1000);
-                document.getElementById("sel-badge").style.display = "none";
                 document.getElementById("tb-path").classList.remove("active");
               }
               return;
@@ -1782,12 +2051,14 @@
               } else {
                 showMultiPanel();
               }
+              if (ST.isolate) rebuild();
             } else {
               ST.sel.clear();
               ST.sel.add(d.id);
               applySelVis();
               badge();
               focusNode(d);
+              if (ST.isolate) rebuild();
             }
           })
           .on("dblclick", (ev, d) => {
@@ -1833,6 +2104,7 @@
 
         drawSphere();
         applyMode();
+        renderTopList();
       }
 
       // ── SPHERE DRAG ──────────────────────────────────────────────
@@ -1928,10 +2200,25 @@
           .attr("r", (d) =>
             Math.max(1.5, _szSc(d[sz] || 0) * (0.55 + 0.45 * d._ps)),
           )
-          .style("opacity", (d) =>
-            Math.max(0.07, 0.25 + 0.75 * ((d._pz / _sphR + 1) / 2)),
-          );
-        if (Ls) Ls.style("opacity", (d) => (d._pz > 0 ? 1 : 0));
+          .style("opacity", (d) => {
+            // Path highlight takes priority
+            if (PATH_HL.nodes.size > 0) {
+              return PATH_HL.nodes.has(d.id) ? 1 : 0.1;
+            }
+            // Selection highlight (non-isolate mode)
+            if (ST.sel.size > 0 && !ST.isolate) {
+              return ST.sel.has(d.id) ? 1 : 0.15;
+            }
+            // Default depth-based opacity
+            return Math.max(0.07, 0.25 + 0.75 * ((d._pz / _sphR + 1) / 2));
+          });
+        if (Ls) {
+          Ls.style("opacity", (d) => {
+            if (PATH_HL.nodes.size > 0) return PATH_HL.nodes.has(d.id) ? 1 : 0;
+            if (ST.sel.size > 0 && !ST.isolate) return ST.sel.has(d.id) ? 1 : 0;
+            return d._pz > 0 ? 1 : 0;
+          });
+        }
         // Edges
         if (Es)
           Es.attr("x1", (d) => d._src._px)
@@ -1939,6 +2226,19 @@
             .attr("x2", (d) => d._tgt._px)
             .attr("y2", (d) => d._tgt._py)
             .style("opacity", (d) => {
+              // Path highlight takes priority
+              if (PATH_HL.edges.size > 0) {
+                const s = d.source?.id ?? d.source;
+                const t = d.target?.id ?? d.target;
+                return PATH_HL.edges.has(s + "|" + t) ? 0.95 : 0.03;
+              }
+              // Selection mode: highlight edges touching selected nodes
+              if (ST.sel.size > 0 && !ST.isolate) {
+                const s = d.source?.id ?? d.source;
+                const t = d.target?.id ?? d.target;
+                if (ST.sel.has(s) || ST.sel.has(t)) return 0.85;
+                return 0.04;
+              }
               const mz = Math.min(d._src._pz, d._tgt._pz);
               return Math.max(0.03, 0.12 + 0.45 * ((mz / _sphR + 1) / 2));
             });
@@ -1947,6 +2247,8 @@
       // ── UI / LAYOUT / EXTRA TOOLS ─────────────────────────────────
       let PATH_START = null;
       let PATH_HL = { nodes: new Set(), edges: new Set() };
+      let PATH_FROM_ID = null;
+      let PATH_TO_ID = null;
 
       function toggleTheme() {
         const el = document.documentElement;
@@ -1972,17 +2274,49 @@
         const el = document.getElementById(
           side === "left" ? "sidebar-left" : "sidebar-right",
         );
+        const btn = document.getElementById(
+          side === "left" ? "btn-collapse-left" : "btn-collapse-right",
+        );
         el.classList.toggle("collapsed");
+        const isNowCollapsed = el.classList.contains("collapsed");
+
+        if (side === "left") {
+          btn.textContent = isNowCollapsed ? ">" : "<";
+        } else {
+          btn.textContent = isNowCollapsed ? "<" : ">";
+        }
+
         const left = document
           .getElementById("sidebar-left")
           .classList.contains("collapsed");
         const right = document
           .getElementById("sidebar-right")
           .classList.contains("collapsed");
+
         app.classList.toggle("left-collapsed", left && !right);
         app.classList.toggle("right-collapsed", right && !left);
         app.classList.toggle("both-collapsed", left && right);
+
+        // Trigger resize logic after transition
+        setTimeout(() => handleResize(), 310);
       }
+
+      function handleResize() {
+        const svg = d3.select("#network-svg");
+        if (!svg.node()) return;
+        const W = svg.node().clientWidth,
+          H = svg.node().clientHeight;
+        _sphCx = W / 2;
+        _sphCy = H / 2;
+        _sphR = (Math.min(W, H) * ST.opts.dist) / 100;
+
+        // Update background hit rect
+        svg.select("#bg-hit").attr("width", W).attr("height", H);
+
+        drawSphere();
+      }
+
+      window.addEventListener("resize", () => db(handleResize, 100, "resize"));
 
       function buildAdj() {
         const adj = new Map();
@@ -2008,11 +2342,10 @@
         // hide all first
         commEl.style.display = "none";
         roleEl.style.display = "none";
-        topEl.style.display = "none";
+        topEl.style.display = "block";
         if (metrEl) metrEl.style.display = "none";
         if (col === "community") {
           commEl.style.display = "block";
-          topEl.style.display = "block";
         } else if (col === "inferred_role") {
           roleEl.style.display = "block";
         } else if (
@@ -2027,9 +2360,8 @@
             renderMetricLegend(col);
           }
         } else {
-          // fallback: show community legend and top list
+          // fallback: show community legend
           commEl.style.display = "block";
-          topEl.style.display = "block";
         }
       }
 
@@ -2062,37 +2394,87 @@
 
       function showPathBetween(a, b) {
         clearPathHighlight();
+        if (a === b) return;
         const p = shortestPath(a, b);
-        if (!p) return;
+        if (!p) {
+          const badge = document.getElementById("sel-badge");
+          badge.innerHTML = `<span style="color:var(--accent2)">✕ No path found:</span> <span style="color:var(--muted);font-size:9px">${a.split("@")[0]} → ${b.split("@")[0]}</span>`;
+          badge.style.display = "block";
+          badge.style.maxWidth = "60vw";
+          badge.style.whiteSpace = "normal";
+          setTimeout(() => {
+            badge.style.display = "none";
+          }, 4000);
+          return;
+        }
         const setN = new Set(p);
-        // highlight nodes
+        PATH_HL.nodes = setN;
+
+        // Build set of edge keys that belong to the path (both directions)
+        const pathEdgeKeys = new Set();
+        for (let i = 0; i < p.length - 1; i++) {
+          pathEdgeKeys.add(p[i] + "|" + p[i + 1]);
+          pathEdgeKeys.add(p[i + 1] + "|" + p[i]);
+        }
+        PATH_HL.edges = pathEdgeKeys;
+
+        // Mark path nodes as selected visually
         Ns.classed("selected", (d) => setN.has(d.id));
-        // highlight edges belonging to path
-        Es.classed("hi", (e) => {
+        // Mark path edges
+        const isPathEdge = (e) => {
           const s = e.source?.id ?? e.source;
           const t = e.target?.id ?? e.target;
-          for (let i = 0; i < p.length - 1; i++)
-            if (
-              (p[i] === s && p[i + 1] === t) ||
-              (p[i] === t && p[i + 1] === s)
-            )
-              return true;
-          return false;
-        }).classed(
+          return pathEdgeKeys.has(s + "|" + t);
+        };
+        Es.classed("hi", (e) => isPathEdge(e)).classed(
           "dim",
-          (e) =>
-            !(
-              (e.classList &&
-                e.classList.contains &&
-                e.classList.contains("hi")) ||
-              false
-            ),
+          (e) => !isPathEdge(e),
         );
+
+        // Build readable hop-by-hop path label with arrows
+        const pathNames = p.map((id) => id.split("@")[0]);
+        const fromName = pathNames[0];
+        const toName = pathNames[pathNames.length - 1];
+        const hops = p.length - 1;
+        const badge = document.getElementById("sel-badge");
+        badge.innerHTML =
+          `<div style="margin-bottom:4px">` +
+          `<span style="color:var(--accent);font-weight:700">${fromName}</span>` +
+          ` <span style="color:var(--muted)">→</span> ` +
+          `<span style="color:var(--accent2);font-weight:700">${toName}</span>` +
+          ` <span style="color:var(--muted);font-size:8px">(${hops} hop${hops !== 1 ? "s" : ""})</span>` +
+          `</div>` +
+          `<div style="color:var(--text);font-size:9px;line-height:1.6;opacity:0.85">${pathNames.join(' <span style="color:var(--accent3)">→</span> ')}</div>` +
+          `<div style="margin-top:5px"><span id="btn-clear-path" style="text-decoration:underline;cursor:pointer;color:var(--muted);font-size:8px">[clear path]</span></div>`;
+        badge.style.display = "block";
+        badge.style.maxWidth = "70vw";
+        badge.style.whiteSpace = "normal";
+        badge.style.lineHeight = "1.5";
+        const clearBtn = document.getElementById("btn-clear-path");
+        if (clearBtn)
+          clearBtn.onclick = (e) => {
+            e.stopPropagation();
+            clearPathHighlight();
+            badge.style.display = "none";
+          };
+
+        // Trigger drawSphere to apply new opacity state
+        drawSphere();
       }
 
       function clearPathHighlight() {
-        if (Ns) Ns.classed("selected", (d) => ST.sel.has(d.id));
-        if (Es) Es.classed("hi", false).classed("dim", false);
+        PATH_HL.nodes = new Set();
+        PATH_HL.edges = new Set();
+        if (Ns) {
+          Ns.classed("selected", (d) => ST.sel.has(d.id));
+          // Remove inline opacity -- drawSphere will re-compute
+          Ns.select("circle").style("opacity", null);
+        }
+        if (Es) {
+          Es.classed("hi", false).classed("dim", false);
+          Es.style("opacity", null);
+        }
+        drawSphere();
       }
 
       function showEgo(nodeId) {
@@ -2240,29 +2622,21 @@
       // ── SELECTION ───────────────────────────────────────────────
       function applySelVis() {
         if (!Ns) return;
-        const has = ST.sel.size > 0;
         Ns.classed("selected", (d) => ST.sel.has(d.id));
-        if (has) {
-          const selEdge = (e) => {
-            const s = e.source.id != null ? e.source.id : e.source,
-              t = e.target.id != null ? e.target.id : e.target;
-            return ST.sel.has(s) || ST.sel.has(t);
-          };
-          Es.classed("hi", selEdge).classed("dim", (e) => !selEdge(e));
-          Ns.select("circle").style("opacity", (d) =>
-            ST.sel.has(d.id) ? 1 : 0.18,
-          );
-        } else {
-          Es.classed("hi", false).classed("dim", false);
-          Ns.select("circle").style("opacity", null);
-          drawSphere();
-        }
+        // Always clear inline opacity overrides and let drawSphere compute them
+        Ns.select("circle").style("opacity", null);
+        Es.classed("hi", false).classed("dim", false);
+        Es.style("opacity", null);
+        drawSphere();
       }
       function applyPinVis() {
         if (Ns) Ns.classed("pinned", (d) => ST.pinned.has(d.id));
       }
       function clearSel() {
+        const wasIso = ST.isolate;
         ST.sel.clear();
+        ST.isolate = false;
+        clearPathHighlight();
         applySelVis();
         badge();
         document.getElementById("node-detail").style.display = "none";
@@ -2270,12 +2644,36 @@
         document
           .querySelectorAll(".node-list-item")
           .forEach((e) => e.classList.remove("active"));
+        if (wasIso) rebuild();
       }
       function badge() {
         const el = document.getElementById("sel-badge"),
           n = ST.sel.size;
+        // Don't overwrite the path badge if a path is active
+        if (PATH_HL.nodes.size > 0) return;
         el.style.display = n ? "block" : "none";
-        if (n) el.textContent = `${n} node${n > 1 ? "s" : ""} selected`;
+        if (n) {
+          const isolateLabel = ST.isolate
+            ? "Show All Nodes"
+            : "Only These Nodes";
+          el.style.maxWidth = "";
+          el.style.whiteSpace = "";
+          el.style.lineHeight = "";
+          el.innerHTML =
+            `<span style="color:var(--accent3)">${n} node${n > 1 ? "s" : ""} selected</span>` +
+            ` <span id="btn-isolate-quick" style="margin-left:8px;text-decoration:underline;cursor:pointer;color:var(--accent);font-size:9px">[${isolateLabel}]</span>` +
+            ` <span id="btn-clear-sel-quick" style="margin-left:4px;text-decoration:underline;cursor:pointer;color:var(--accent2);font-size:9px">[✕ clear]</span>`;
+          document.getElementById("btn-isolate-quick").onclick = (e) => {
+            e.stopPropagation();
+            ST.isolate = !ST.isolate;
+            rebuild();
+            badge();
+          };
+          document.getElementById("btn-clear-sel-quick").onclick = (e) => {
+            e.stopPropagation();
+            clearSel();
+          };
+        }
       }
 
       // ── LABELS ──────────────────────────────────────────────────
@@ -2291,7 +2689,7 @@
       function showTooltip(ev, d) {
         const tt = document.getElementById("tooltip");
         tt.style.display = "block";
-        tt.innerHTML = `<div class="tt-name">${d.id}</div><div class="tt-role">${d.inferred_role || "—"}</div><div class="tt-row"><span class="tt-key">Community</span><span class="tt-val">${d.community ?? "—"}</span></div><div class="tt-row"><span class="tt-key">PageRank</span><span class="tt-val">${(d.pagerank || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Betweenness</span><span class="tt-val">${(d.betweenness || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Sent / Recv</span><span class="tt-val">${(d.sent || 0).toLocaleString()} / ${(d.received || 0).toLocaleString()}</span></div><div class="tt-row"><span class="tt-key">Contacts</span><span class="tt-val">${d.unique_contacts || 0}</span></div><div class="tt-hint">Click · Shift+click multi · Dbl-click pin</div>`;
+        tt.innerHTML = `<div class="tt-name">${d.id}</div><div class="tt-role">${d.inferred_role || "—"}</div><div class="tt-row"><span class="tt-key">Community</span><span class="tt-val">${d.community ?? "—"}</span></div><div class="tt-row"><span class="tt-key">PageRank</span><span class="tt-val">${(d.pagerank || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Betweenness</span><span class="tt-val">${(d.betweenness || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Eigenvector</span><span class="tt-val">${(d.eigenvector || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Clustering</span><span class="tt-val">${(d.clustering || 0).toFixed(4)}</span></div><div class="tt-row"><span class="tt-key">Sent / Recv</span><span class="tt-val">${(d.sent || 0).toLocaleString()} / ${(d.received || 0).toLocaleString()}</span></div><div class="tt-row"><span class="tt-key">Contacts</span><span class="tt-val">${d.unique_contacts || 0}</span></div><div class="tt-hint">Click · Shift+click multi · Dbl-click pin</div>`;
         moveTT(ev);
       }
       function moveTT(ev) {
@@ -2307,9 +2705,25 @@
       function hideTT() {
         document.getElementById("tooltip").style.display = "none";
       }
-
+      function escHtml(v) {
+        return String(v == null ? "" : v)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
       // ── FOCUS NODE ──────────────────────────────────────────────
       function focusNode(d) {
+        // Auto-switch to "Selected" tab
+        const TABS = ["overview", "analytics", "selected"];
+        TABS.forEach((t) => {
+          document
+            .getElementById(`rtab-${t}`)
+            .classList.toggle("active", t === "selected");
+          document.getElementById(`tab-${t}`).style.display =
+            t === "selected" ? "block" : "none";
+        });
         document.getElementById("node-detail").style.display = "block";
         document.getElementById("multi-detail").style.display = "none";
         document
@@ -2377,10 +2791,16 @@
         // Rotate sphere so node d appears at the front (z = +R)
         if (d._sx == null) return;
         const cur = normalize3(matVec(SPHERE_ROT, [d._sx, d._sy, d._sz]));
-        const angle = Math.acos(Math.min(1, Math.max(-1, cur[2])));
+        const cosAngle = Math.min(1, Math.max(-1, cur[2]));
+        const angle = Math.acos(cosAngle);
         if (angle < 0.01) return;
-        const ax = normalize3(cross3(cur, [0, 0, 1]));
-        if (Math.hypot(ax[0], ax[1], ax[2]) < 0.001) return;
+        let ax = cross3(cur, [0, 0, 1]);
+        if (Math.hypot(ax[0], ax[1], ax[2]) < 0.001) {
+          // cur is [0,0,1] or [0,0,-1]. angle 0 handled above.
+          // if angle ~ PI, pick any ortho axis
+          ax = [1, 0, 0];
+        }
+        ax = normalize3(ax);
         const steps = 30;
         let step = 0;
         const partRot = rotAxisAngle(ax[0], ax[1], ax[2], angle / steps);
@@ -2400,13 +2820,26 @@
           document.getElementById("multi-detail").style.display = "none";
           return;
         }
+        // Auto-switch to "Selected" tab
+        const TABS = ["overview", "analytics", "selected"];
+        TABS.forEach((t) => {
+          document
+            .getElementById(`rtab-${t}`)
+            .classList.toggle("active", t === "selected");
+          document.getElementById(`tab-${t}`).style.display =
+            t === "selected" ? "block" : "none";
+        });
         document.getElementById("node-detail").style.display = "none";
         document.getElementById("multi-detail").style.display = "block";
         document.getElementById("multi-title").textContent =
           `${n} nodes selected`;
         const sel = ND.filter((d) => ST.sel.has(d.id)),
           avg = (k) =>
-            (sel.reduce((s, d) => s + (d[k] || 0), 0) / sel.length).toFixed(4),
+            sel.length
+              ? (sel.reduce((s, d) => s + (d[k] || 0), 0) / sel.length).toFixed(
+                  4,
+                )
+              : "—",
           sum = (k) =>
             sel.reduce((s, d) => s + (d[k] || 0), 0).toLocaleString();
         document.getElementById("multi-metrics").innerHTML = [
@@ -2420,6 +2853,14 @@
               `<div class="metric-card"><div class="metric-val" style="font-size:12px">${m.v}</div><div class="metric-lbl">${m.l}</div></div>`,
           )
           .join("");
+
+        // Update the focus-subgraph / isolate button in the panel
+        const focusBtn = document.getElementById("btn-focus-sub");
+        if (focusBtn) {
+          focusBtn.textContent = ST.isolate
+            ? "⊡ Show All Nodes"
+            : "⊠ Only Selected";
+        }
       }
 
       // ── FIT ──────────────────────────────────────────────────────
@@ -2443,23 +2884,43 @@
 
       // ── PNG ──────────────────────────────────────────────────────
       function exportPNG() {
-        const svgEl = document.getElementById("network-svg"),
-          s = new XMLSerializer().serializeToString(svgEl),
+        const svgOriginal = document.getElementById("network-svg");
+        const svgEl = svgOriginal.cloneNode(true);
+        svgEl.setAttribute("width", svgOriginal.clientWidth);
+        svgEl.setAttribute("height", svgOriginal.clientHeight);
+
+        // Embed styles
+        const styles = Array.from(document.styleSheets)
+          .flatMap((sheet) => {
+            try {
+              return Array.from(sheet.cssRules);
+            } catch (e) {
+              return [];
+            }
+          })
+          .map((rule) => rule.cssText)
+          .join("\n");
+        const styleEl = document.createElement("style");
+        styleEl.textContent = styles;
+        svgEl.prepend(styleEl);
+
+        const s = new XMLSerializer().serializeToString(svgEl),
           c = document.createElement("canvas");
-        c.width = svgEl.clientWidth * 2;
-        c.height = svgEl.clientHeight * 2;
+        c.width = svgOriginal.clientWidth * 2;
+        c.height = svgOriginal.clientHeight * 2;
         const ctx = c.getContext("2d");
         const bg =
           getComputedStyle(document.documentElement).getPropertyValue("--bg") ||
           "#05070d";
         ctx.fillStyle = bg.trim();
         ctx.fillRect(0, 0, c.width, c.height);
+
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0, c.width, c.height);
           const a = document.createElement("a");
-          a.download = "enron-sna.png";
-          a.href = c.toDataURL();
+          a.download = `enron-sna-${new Date().getTime()}.png`;
+          a.href = c.toDataURL("image/png");
           a.click();
         };
         img.src =
@@ -2468,40 +2929,115 @@
 
       // ── SEARCH ──────────────────────────────────────────────────
       function setupSearch() {
-        const inp = document.getElementById("node-search"),
-          res = document.getElementById("search-results");
-        inp.addEventListener("input", () => {
-          const q = inp.value.trim().toLowerCase();
-          if (!q) {
-            res.style.display = "none";
-            return;
-          }
-          const hits = ND.filter(
+        const findNodeId = (raw) => {
+          const q = (raw || "").trim().toLowerCase();
+          if (!q) return null;
+          const exact = ND.find(
+            (n) =>
+              n.id.toLowerCase() === q ||
+              (n.label || "").toLowerCase() === q ||
+              n.id.split("@")[0].toLowerCase() === q,
+          );
+          if (exact) return exact.id;
+          const first = ND.find(
             (n) =>
               n.id.toLowerCase().includes(q) ||
               (n.label || "").toLowerCase().includes(q),
-          ).slice(0, 10);
-          if (!hits.length) {
-            res.style.display = "none";
-            return;
-          }
-          res.style.display = "block";
-          res.innerHTML = hits
-            .map(
-              (n) =>
-                `<div class="search-item" data-id="${n.id}">${n.label || n.id.split("@")[0]}<span style="color:var(--muted);font-size:8px"> ${n.id}</span></div>`,
-            )
-            .join("");
-          res.querySelectorAll(".search-item").forEach((el) =>
-            el.addEventListener("click", () => {
-              focusById(el.dataset.id);
-              inp.value = "";
-              res.style.display = "none";
-            }),
           );
+          return first ? first.id : null;
+        };
+        const attachSearch = (inp, res, onPick) => {
+          inp.addEventListener("input", () => {
+            const q = inp.value.trim().toLowerCase();
+            if (!q) {
+              res.style.display = "none";
+              return;
+            }
+            const hits = ND.filter(
+              (n) =>
+                n.id.toLowerCase().includes(q) ||
+                (n.label || "").toLowerCase().includes(q),
+            ).slice(0, 10);
+            if (!hits.length) {
+              res.style.display = "none";
+              return;
+            }
+            res.style.display = "block";
+            res.innerHTML = hits
+              .map(
+                (n) =>
+                  `<div class="search-item" data-id="${n.id}">${n.label || n.id.split("@")[0]}<span style="color:var(--muted);font-size:8px"> ${n.id}</span></div>`,
+              )
+              .join("");
+            res.querySelectorAll(".search-item").forEach((el) =>
+              el.addEventListener("click", () => {
+                const id = el.dataset.id;
+                const node = ND.find((n) => n.id === id);
+                onPick(id, node);
+                res.style.display = "none";
+              }),
+            );
+          });
+        };
+
+        const inp = document.getElementById("node-search");
+        const res = document.getElementById("search-results");
+        attachSearch(inp, res, (id) => {
+          focusById(id);
+          inp.value = "";
         });
+
+        const fromInp = document.getElementById("path-from");
+        const fromRes = document.getElementById("path-from-results");
+        const toInp = document.getElementById("path-to");
+        const toRes = document.getElementById("path-to-results");
+
+        attachSearch(fromInp, fromRes, (id, node) => {
+          PATH_FROM_ID = id;
+          fromInp.value = node?.label || id.split("@")[0];
+        });
+        attachSearch(toInp, toRes, (id, node) => {
+          PATH_TO_ID = id;
+          toInp.value = node?.label || id.split("@")[0];
+        });
+
+        const runPath = () => {
+          const fromId = PATH_FROM_ID || findNodeId(fromInp.value);
+          const toId = PATH_TO_ID || findNodeId(toInp.value);
+          if (!fromId || !toId) return;
+          PATH_FROM_ID = fromId;
+          PATH_TO_ID = toId;
+          showPathBetween(fromId, toId);
+        };
+
+        fromInp.addEventListener("input", () => (PATH_FROM_ID = null));
+        toInp.addEventListener("input", () => (PATH_TO_ID = null));
+        fromInp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") runPath();
+        });
+        toInp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") runPath();
+        });
+        document
+          .getElementById("btn-path-find")
+          .addEventListener("click", runPath);
+        document
+          .getElementById("btn-path-clear")
+          .addEventListener("click", () => {
+            PATH_FROM_ID = null;
+            PATH_TO_ID = null;
+            fromInp.value = "";
+            toInp.value = "";
+            clearPathHighlight();
+            document.getElementById("sel-badge").style.display = "none";
+          });
+
         document.addEventListener("click", (e) => {
-          if (!e.target.closest(".search-wrap")) res.style.display = "none";
+          if (!e.target.closest(".search-wrap")) {
+            res.style.display = "none";
+            fromRes.style.display = "none";
+            toRes.style.display = "none";
+          }
         });
       }
 
@@ -2511,7 +3047,23 @@
         DT[k] = setTimeout(fn, ms);
       };
       const rebuild = () => {
-        if (RAW.graph_data) buildNetwork(RAW.graph_data, ST.opts);
+        if (RAW.graph_data) {
+          const data =
+            ST.isolate && ST.sel.size > 0
+              ? {
+                  nodes: RAW.graph_data.nodes.filter((n) => ST.sel.has(n.id)),
+                  edges: RAW.graph_data.edges.filter((e) => {
+                    const s = e.source?.id ?? e.source;
+                    const t = e.target?.id ?? e.target;
+                    return ST.sel.has(s) && ST.sel.has(t);
+                  }),
+                }
+              : RAW.graph_data;
+          buildNetwork(data, ST.opts);
+          // Reapply selection visuals after rebuild
+          applySelVis();
+          badge();
+        }
       };
 
       function setupControls() {
@@ -2521,14 +3073,14 @@
           document.getElementById("weight-val").textContent =
             v < 1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : Math.round(v);
           ST.opts.minW = v;
-          db(rebuild, 350, "w");
+          db(rebuild, 40, "w");
         });
         document
           .getElementById("slider-nodes")
           .addEventListener("input", function () {
             document.getElementById("nodes-val").textContent = this.value;
             ST.opts.maxN = +this.value;
-            db(rebuild, 350, "n");
+            db(rebuild, 40, "n");
           });
         // Sphere radius slider
         document
@@ -2557,6 +3109,7 @@
         document.getElementById("sel-size").addEventListener("change", (e) => {
           ST.opts.sz = e.target.value;
           refreshVisuals();
+          renderTopList();
         });
         document.getElementById("sel-color").addEventListener("change", (e) => {
           ST.opts.col = e.target.value;
@@ -2649,8 +3202,14 @@
           applyLabels();
         });
         document.getElementById("tb-png").addEventListener("click", exportPNG);
+        document
+          .getElementById("tb-json")
+          .addEventListener("click", exportJSON);
+        document.getElementById("tb-help").addEventListener("click", () => {
+          document.getElementById("kbd-help").classList.toggle("visible");
+        });
 
-        // new controls: theme + sidebar collapse + layout/path/role
+        // new controls: theme + sidebar collapse + path
         document
           .getElementById("btn-theme")
           .addEventListener("click", () => toggleTheme());
@@ -2663,37 +3222,31 @@
         document.getElementById("tb-path").addEventListener("click", () => {
           const btn = document.getElementById("tb-path");
           btn.classList.toggle("active");
-          // path mode toggles: user Alt+click two nodes to compute path
-          // guide via tooltip hint — listeners on node clicks handle if Alt is pressed
-        });
-        document.getElementById("tb-role").addEventListener("click", () => {
-          const on = document
-            .getElementById("tb-role")
-            .classList.toggle("active");
-          // toggle role shapes: apply a small star for executives, square for broadcasters
-          if (Ns) {
-            Ns.select("circle").attr("rx", null).attr("ry", null);
-            Ns.select("circle").attr("r", (d) => _szSc(d[ST.opts.sz] || 0));
+          if (!btn.classList.contains("active")) {
+            PATH_START = null;
+            document.getElementById("sel-badge").style.display = "none";
+            clearPathHighlight();
           }
         });
 
-        // right tab switching
-        document
-          .getElementById("rtab-overview")
-          .addEventListener("click", () => {
-            document.getElementById("rtab-overview").classList.add("active");
-            document.getElementById("rtab-selected").classList.remove("active");
-            document.getElementById("tab-overview").style.display = "block";
-            document.getElementById("tab-selected").style.display = "none";
-          });
-        document
-          .getElementById("rtab-selected")
-          .addEventListener("click", () => {
-            document.getElementById("rtab-selected").classList.add("active");
-            document.getElementById("rtab-overview").classList.remove("active");
-            document.getElementById("tab-overview").style.display = "none";
-            document.getElementById("tab-selected").style.display = "block";
-          });
+        // right tab switching (3 tabs)
+        const TABS = ["overview", "analytics", "selected"];
+        TABS.forEach((tab) => {
+          document
+            .getElementById(`rtab-${tab}`)
+            .addEventListener("click", () => {
+              TABS.forEach((t) => {
+                document
+                  .getElementById(`rtab-${t}`)
+                  .classList.toggle("active", t === tab);
+                document.getElementById(`tab-${t}`).style.display =
+                  t === tab ? "block" : "none";
+              });
+            });
+        });
+
+        startAutoSpin();
+        document.getElementById("btn-play").classList.add("active");
 
         // multi panel
         document
@@ -2702,13 +3255,17 @@
         document
           .getElementById("btn-focus-sub")
           .addEventListener("click", () => {
-            if (!Es || ST.sel.size < 2) return;
-            const subEdge = (e) => {
-              const s = e.source?.id ?? e.source,
-                t = e.target?.id ?? e.target;
-              return ST.sel.has(s) && ST.sel.has(t);
-            };
-            Es.classed("dim", (e) => !subEdge(e)).classed("hi", subEdge);
+            if (ST.sel.size < 1) return;
+            // Toggle isolate mode: show only the selected nodes
+            ST.isolate = !ST.isolate;
+            rebuild();
+            badge();
+            // Update button label
+            const focusBtn = document.getElementById("btn-focus-sub");
+            if (focusBtn)
+              focusBtn.textContent = ST.isolate
+                ? "⊡ Show All Nodes"
+                : "⊠ Only Selected";
           });
       }
 
@@ -2738,6 +3295,9 @@
             .classList.toggle("active", ST.showLabels);
           applyLabels();
         }
+        if (ev.key === "?") {
+          document.getElementById("kbd-help").classList.toggle("visible");
+        }
       });
 
       // ── BOOTSTRAP ───────────────────────────────────────────────
@@ -2748,11 +3308,13 @@
         await pause(28);
         if (RAW.stats && Object.keys(RAW.stats).length) renderStats(RAW.stats);
         renderCommLegend(RAW.communities);
-        renderTopList(RAW.top_nodes);
+        renderTopList();
         renderCloud(RAW.keywords);
         renderCommChart(RAW.communities);
-        renderTopChart(RAW.top_nodes);
         renderRoleLegend();
+        renderTimelineChart(RAW.timeline);
+        renderDegDistChart(RAW.degree_dist);
+        renderCommStats(RAW.communities);
         setLoad("Building sphere graph…", 93);
         await pause(28);
         buildNetwork(RAW.graph_data, ST.opts);

@@ -1198,6 +1198,7 @@
           <button class="tbtn" id="tb-lasso">⬡ Lasso</button>
           <button class="tbtn" id="tb-pan">✥ Pan</button>
           <button class="tbtn" id="tb-labels">Ⓐ Labels</button>
+          <button class="tbtn" id="tb-ego" title="Ego Network: Select a node then click this (or press E) to see only its direct neighbors">👤 Ego</button>
           <button class="tbtn" id="tb-path">⇄ Path</button>
           <button class="tbtn" id="tb-png">⬇ PNG</button>
           <button class="tbtn" id="tb-json">{ } JSON</button>
@@ -1405,6 +1406,7 @@
         pinned: new Set(),
         _dragging: false,
         isolate: false,
+        egoNode: null,
         opts: {
           maxN: 500,
           minW: 8.0,
@@ -3048,32 +3050,114 @@
       };
       const rebuild = () => {
         if (RAW.graph_data) {
-          const data =
-            ST.isolate && ST.sel.size > 0
-              ? {
-                  nodes: RAW.graph_data.nodes.filter((n) => ST.sel.has(n.id)),
-                  edges: RAW.graph_data.edges.filter((e) => {
-                    const s = e.source?.id ?? e.source;
-                    const t = e.target?.id ?? e.target;
-                    return ST.sel.has(s) && ST.sel.has(t);
-                  }),
-                }
-              : RAW.graph_data;
+          let data;
+          if (ST.egoNode) {
+            // Ego-network mode: show ego node + 1-hop neighbors
+            const egoId = ST.egoNode;
+            const neighbors = new Set([egoId]);
+            RAW.graph_data.edges.forEach(e => {
+              const s = e.source?.id ?? e.source;
+              const t = e.target?.id ?? e.target;
+              if (s === egoId) neighbors.add(t);
+              if (t === egoId) neighbors.add(s);
+            });
+            data = {
+              nodes: RAW.graph_data.nodes.filter(n => neighbors.has(n.id)),
+              edges: RAW.graph_data.edges.filter(e => {
+                const s = e.source?.id ?? e.source;
+                const t = e.target?.id ?? e.target;
+                return neighbors.has(s) && neighbors.has(t);
+              }),
+            };
+          } else if (ST.isolate && ST.sel.size > 0) {
+            data = {
+              nodes: RAW.graph_data.nodes.filter((n) => ST.sel.has(n.id)),
+              edges: RAW.graph_data.edges.filter((e) => {
+                const s = e.source?.id ?? e.source;
+                const t = e.target?.id ?? e.target;
+                return ST.sel.has(s) && ST.sel.has(t);
+              }),
+            };
+          } else {
+            data = RAW.graph_data;
+          }
           buildNetwork(data, ST.opts);
           // Reapply selection visuals after rebuild
           applySelVis();
           badge();
+          // Update ego badge
+          updateEgoBadge();
         }
       };
 
+      function toggleEgoNetwork() {
+        if (ST.egoNode) {
+          // Exit ego mode
+          ST.egoNode = null;
+          document.getElementById("tb-ego").classList.remove("active");
+          rebuild();
+          return;
+        }
+        // Enter ego mode: need exactly 1 selected node
+        if (ST.sel.size !== 1) {
+          const el = document.getElementById("sel-badge");
+          el.style.display = "block";
+          el.innerHTML = '<span style="color:var(--amber)">Select exactly 1 node, then press E for ego view</span>';
+          setTimeout(() => { if (!ST.sel.size) el.style.display = "none"; }, 2500);
+          return;
+        }
+        const egoId = [...ST.sel][0];
+        ST.egoNode = egoId;
+        document.getElementById("tb-ego").classList.add("active");
+        rebuild();
+      }
+
+      function updateEgoBadge() {
+        if (!ST.egoNode) return;
+        const el = document.getElementById("sel-badge");
+        const egoNode = RAW.graph_data.nodes.find(n => n.id === ST.egoNode);
+        if (!egoNode) return;
+        const neighbors = new Set();
+        RAW.graph_data.edges.forEach(e => {
+          const s = e.source?.id ?? e.source;
+          const t = e.target?.id ?? e.target;
+          if (s === ST.egoNode) neighbors.add(t);
+          if (t === ST.egoNode) neighbors.add(s);
+        });
+        // Count 2-hop neighbors
+        const twoHop = new Set();
+        neighbors.forEach(nid => {
+          RAW.graph_data.edges.forEach(e => {
+            const s = e.source?.id ?? e.source;
+            const t = e.target?.id ?? e.target;
+            if (s === nid && !neighbors.has(t) && t !== ST.egoNode) twoHop.add(t);
+            if (t === nid && !neighbors.has(s) && s !== ST.egoNode) twoHop.add(s);
+          });
+        });
+        el.style.display = "block";
+        el.style.maxWidth = "480px";
+        el.style.whiteSpace = "normal";
+        el.style.lineHeight = "1.5";
+        el.innerHTML =
+          `<span style="color:var(--accent)">👤 Ego: ${egoNode.label}</span> ` +
+          `<span style="color:var(--muted);font-size:9px;margin-left:6px;">Direct: <b style="color:var(--text)">${neighbors.size - 1}</b> · Indirect (2-hop): <b style="color:var(--text)">${twoHop.size}</b> · Role: <b style="color:var(--text)">${egoNode.inferred_role}</b></span> ` +
+          `<span id="btn-exit-ego" style="margin-left:8px;text-decoration:underline;cursor:pointer;color:var(--accent2);font-size:9px">[✕ Exit Ego]</span>`;
+        document.getElementById("btn-exit-ego").onclick = (e) => {
+          e.stopPropagation();
+          toggleEgoNetwork();
+        };
+      }
+
       function setupControls() {
         const wsl = document.getElementById("slider-weight");
+        let _rafW = null;
         wsl.addEventListener("input", function () {
           const v = Math.pow(10, +this.value / 30) - 1; // log slider with true zero minimum
           document.getElementById("weight-val").textContent =
             v < 1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : Math.round(v);
           ST.opts.minW = v;
-          db(rebuild, 40, "w");
+          if (_rafW) cancelAnimationFrame(_rafW);
+          _rafW = requestAnimationFrame(() => { db(rebuild, 20, "w"); _rafW = null; });
         });
         document
           .getElementById("slider-nodes")
@@ -3208,6 +3292,7 @@
         document.getElementById("tb-help").addEventListener("click", () => {
           document.getElementById("kbd-help").classList.toggle("visible");
         });
+        document.getElementById("tb-ego").addEventListener("click", toggleEgoNetwork);
 
         // new controls: theme + sidebar collapse + path
         document
@@ -3273,10 +3358,12 @@
       document.addEventListener("keydown", (ev) => {
         if (ev.target.tagName === "INPUT") return;
         if (ev.key === "Escape") {
+          if (ST.egoNode) { toggleEgoNetwork(); return; }
           clearSel();
           ST.mode = "select";
           applyMode();
         }
+        if (ev.key === "e" || ev.key === "E") toggleEgoNetwork();
         if (ev.key === "l" || ev.key === "L") {
           ST.mode = ST.mode === "lasso" ? "select" : "lasso";
           applyMode();

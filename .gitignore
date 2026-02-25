@@ -1,3 +1,4 @@
 .venv
 emails.csv
+enron_internal_only.csv
 __pycache__

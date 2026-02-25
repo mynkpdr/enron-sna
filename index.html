@@ -3,17 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Enron SNA Dashboard</title>
-
+    <title>Enron SNA — Shadow Org Intelligence</title>
+    <!-- Inline SVG favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%23003A70'/><circle cx='20' cy='20' r='6' fill='%23FDB913'/><circle cx='44' cy='20' r='6' fill='%23FDB913'/><circle cx='32' cy='44' r='6' fill='%23FDB913'/><line x1='20' y1='20' x2='44' y2='20' stroke='%23FDB913' stroke-width='3'/><line x1='20' y1='20' x2='32' y2='44' stroke='%23FDB913' stroke-width='3'/><line x1='44' y1='20' x2='32' y2='44' stroke='%23FDB913' stroke-width='3'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
     <style>
       *,
       *::before,
@@ -22,57 +21,81 @@
         margin: 0;
         padding: 0;
       }
-
       :root {
-        --bg: #05070d;
-        --bg2: #0b0f1a;
-        --bg3: #111827;
-        --border: #1e2a3a;
-        --accent: #00e5ff;
-        --accent2: #ff4d6d;
-        --accent3: #a855f7;
-        --amber: #fbbf24;
-        --green: #22c55e;
-        --text: #e2e8f0;
-        --muted: #64748b;
-        --grid: rgba(0, 229, 255, 0.04);
-        --font-ui: "Syne", sans-serif;
-        --font-mono: "Space Mono", monospace;
-        --base-font-size: 12px;
-        --header-font-size: 14px;
-        --muted-text: #64748b;
+        --bg: #06080f;
+        --bg2: #0c1018;
+        --bg3: #111820;
+        --bg4: #181f2a;
+        --border: #1a2333;
+        --border2: #243044;
+        --c1: #00d4ff;
+        --c2: #ff3d5a;
+        --c3: #b97dff;
+        --c4: #ffc13d;
+        --c5: #3dff9a;
+        --text: #dde4ef;
+        --muted: #4a5a72;
+        --muted2: #6b7f99;
+        --font-mono: "IBM Plex Mono", monospace;
+        --font-sans: "IBM Plex Sans", sans-serif;
+        --glow-c1: rgba(0, 212, 255, 0.18);
+        --glow-c2: rgba(255, 61, 90, 0.18);
       }
-
       html,
       body {
         background: var(--bg);
         color: var(--text);
-        font-family: var(--font-ui);
-        font-size: var(--base-font-size);
+        font-family: var(--font-sans);
+        font-size: 12px;
         height: 100%;
         overflow: hidden;
         user-select: none;
       }
 
+      /* ── SCANLINE OVERLAY ── */
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.08) 2px,
+          rgba(0, 0, 0, 0.08) 4px
+        );
+        z-index: 9999;
+      }
+
       /* ── LAYOUT ── */
       #app {
         display: grid;
-        grid-template-rows: 54px 1fr;
-        grid-template-columns: 276px 1fr 296px;
+        grid-template-rows: 52px 1fr;
+        grid-template-columns: 270px 1fr 310px;
         height: 100vh;
         overflow: hidden;
         transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
+      #app.lc {
+        grid-template-columns: 0px 1fr 310px;
+      }
+      #app.rc {
+        grid-template-columns: 270px 1fr 0px;
+      }
+      #app.bc {
+        grid-template-columns: 0px 1fr 0px;
+      }
 
       /* ── HEADER ── */
       header {
-        grid-column: 1 / -1;
+        grid-column: 1/-1;
         background: var(--bg2);
         border-bottom: 1px solid var(--border);
         display: flex;
         align-items: center;
-        padding: 0 22px;
-        gap: 18px;
+        padding: 0 18px;
+        gap: 14px;
         position: relative;
         z-index: 20;
       }
@@ -85,109 +108,179 @@
         height: 1px;
         background: linear-gradient(
           90deg,
-          transparent,
-          var(--accent) 40%,
-          var(--accent3) 60%,
-          transparent
+          transparent 0%,
+          var(--c1) 25%,
+          var(--c3) 60%,
+          var(--c2) 80%,
+          transparent 100%
         );
-        opacity: 0.5;
+        opacity: 0.6;
       }
       .logo {
         font-family: var(--font-mono);
-        font-size: var(--header-font-size);
-        color: var(--accent);
-        letter-spacing: 0.13em;
+        font-size: 13px;
+        color: var(--c1);
+        letter-spacing: 0.18em;
         text-transform: uppercase;
+        font-weight: 700;
         white-space: nowrap;
       }
-      .logo span {
-        color: var(--accent2);
+      .logo em {
+        color: var(--c2);
+        font-style: normal;
       }
-      .header-stats {
+      .logo small {
+        color: var(--muted2);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        display: block;
+        margin-top: 1px;
+        font-weight: 400;
+      }
+      .hstats {
         display: flex;
-        gap: 20px;
+        gap: 22px;
         margin-left: auto;
+        align-items: center;
       }
-      .hstat {
+      .hs {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
       }
-      .hstat-val {
+      .hs-v {
         font-family: var(--font-mono);
         font-size: 14px;
-        color: var(--accent);
-        font-weight: 700;
-        line-height: 1.1;
+        color: var(--c1);
+        font-weight: 600;
+        line-height: 1;
       }
-      .hstat-lbl {
-        font-size: 11px;
-        color: var(--muted-text);
+      .hs-l {
+        font-size: 9px;
+        color: var(--muted);
         text-transform: uppercase;
-        letter-spacing: 0.09em;
+        letter-spacing: 0.1em;
+        margin-top: 2px;
+      }
+      .hbtn {
+        background: var(--bg3);
+        border: 1px solid var(--border2);
+        color: var(--muted2);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        padding: 5px 9px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .hbtn:hover {
+        border-color: var(--c1);
+        color: var(--c1);
+      }
+
+      /* Header center GitHub link */
+      .header-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 25;
+        pointer-events: auto;
+      }
+      .header-center a {
+        color: var(--c1);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .header-center svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+        fill: currentColor;
       }
 
       /* ── SIDEBARS ── */
-      #sidebar-left {
+      #sl,
+      #sr {
         background: var(--bg2);
-        border-right: 1px solid var(--border);
         overflow-y: auto;
         overflow-x: hidden;
         display: flex;
         flex-direction: column;
       }
-      #sidebar-right {
-        background: var(--bg2);
+      #sl {
+        border-right: 1px solid var(--border);
+      }
+      #sr {
         border-left: 1px solid var(--border);
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
+      }
+      #sl.collapsed > *,
+      #sr.collapsed > * {
+        display: none;
+      }
+      #sl.collapsed {
+        border-right: none;
+      }
+      #sr.collapsed {
+        border-left: none;
       }
       ::-webkit-scrollbar {
-        width: 3px;
+        width: 2px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: var(--border);
-        border-radius: 2px;
+        background: var(--border2);
+        border-radius: 1px;
       }
 
-      .panel-section {
+      /* ── PANEL PRIMITIVES ── */
+      .ps {
         border-bottom: 1px solid var(--border);
-        padding: 13px 14px;
+        padding: 12px 13px;
       }
-      .panel-title {
-        font-size: 11px;
-        color: var(--accent);
+      .pt {
+        font-size: 9px;
+        color: var(--c1);
         text-transform: uppercase;
-        letter-spacing: 0.16em;
-        margin-bottom: 10px;
+        letter-spacing: 0.18em;
+        margin-bottom: 9px;
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 6px;
+        font-weight: 600;
       }
-      .panel-title::before {
+      .pt::before {
         content: "";
-        width: 5px;
-        height: 5px;
+        width: 4px;
+        height: 4px;
         background: currentColor;
         border-radius: 50%;
-        box-shadow: 0 0 6px currentColor;
+        box-shadow: 0 0 5px currentColor;
         flex-shrink: 0;
       }
-      .panel-title.purple {
-        color: var(--accent3);
+      .pt.amber {
+        color: var(--c4);
       }
-      .panel-title.amber {
-        color: var(--amber);
+      .pt.purple {
+        color: var(--c3);
+      }
+      .pt.red {
+        color: var(--c2);
+      }
+      .pt.green {
+        color: var(--c5);
       }
 
-      /* Controls */
       label {
-        font-size: 11px;
-        color: var(--muted-text);
+        font-size: 10px;
+        color: var(--muted2);
         display: block;
         margin-bottom: 3px;
       }
@@ -195,167 +288,160 @@
         -webkit-appearance: none;
         appearance: none;
         width: 100%;
-        height: 3px;
-        background: var(--border);
-        border-radius: 2px;
+        height: 2px;
+        background: var(--border2);
+        border-radius: 1px;
         outline: none;
-        margin: 5px 0 10px;
+        margin: 4px 0 10px;
         cursor: pointer;
       }
       input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
-        width: 13px;
-        height: 13px;
-        background: var(--accent);
+        width: 11px;
+        height: 11px;
+        background: var(--c1);
         border-radius: 50%;
-        box-shadow: 0 0 7px rgba(0, 229, 255, 0.6);
+        box-shadow: 0 0 6px rgba(0, 212, 255, 0.6);
       }
-      .slider-val {
+      .sv {
         font-family: var(--font-mono);
-        font-size: 11px;
+        font-size: 10px;
         color: var(--text);
         float: right;
       }
-
       select {
         width: 100%;
         background: var(--bg3);
-        border: 1px solid var(--border);
+        border: 1px solid var(--border2);
         color: var(--text);
-        padding: 6px 9px;
-        font-family: var(--font-ui);
-        font-size: 11px;
-        border-radius: 4px;
-        margin-bottom: 9px;
+        padding: 5px 8px;
+        font-family: var(--font-sans);
+        font-size: 10px;
+        border-radius: 3px;
+        margin-bottom: 8px;
         cursor: pointer;
         outline: none;
       }
       select:focus {
-        border-color: var(--accent);
+        border-color: var(--c1);
       }
-
-      .btn-row {
+      .br {
         display: flex;
-        gap: 6px;
-        margin-bottom: 7px;
+        gap: 5px;
+        margin-bottom: 6px;
         flex-wrap: wrap;
       }
       .btn {
         flex: 1;
-        min-width: 46px;
-        padding: 6px 6px;
+        min-width: 44px;
+        padding: 5px 7px;
         font-family: var(--font-mono);
-        font-size: 11px;
+        font-size: 9px;
         text-transform: uppercase;
         letter-spacing: 0.07em;
-        border: 1px solid var(--border);
+        border: 1px solid var(--border2);
         background: var(--bg3);
-        color: var(--muted);
-        border-radius: 4px;
+        color: var(--muted2);
+        border-radius: 3px;
         cursor: pointer;
-        transition: all 0.18s;
+        transition: all 0.15s;
         white-space: nowrap;
       }
       .btn:hover,
       .btn.active {
-        border-color: var(--accent);
-        color: var(--accent);
-        background: rgba(0, 229, 255, 0.05);
-        box-shadow: 0 0 10px rgba(0, 229, 255, 0.1);
+        border-color: var(--c1);
+        color: var(--c1);
+        background: rgba(0, 212, 255, 0.05);
       }
-      .btn.red:hover,
-      .btn.red.active {
-        border-color: var(--accent2);
-        color: var(--accent2);
-        background: rgba(255, 77, 109, 0.05);
+      .btn.r:hover,
+      .btn.r.active {
+        border-color: var(--c2);
+        color: var(--c2);
+        background: rgba(255, 61, 90, 0.05);
       }
-
-      /* Toggle switch */
-      .toggle-row {
+      .tr-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 9px;
+        margin-bottom: 8px;
       }
-      .toggle-label {
-        font-size: 10px;
-        color: var(--muted);
+      .tr-l {
+        font-size: 9px;
+        color: var(--muted2);
       }
-      .toggle-switch {
+      .ts {
         position: relative;
-        width: 32px;
-        height: 18px;
+        width: 30px;
+        height: 16px;
         cursor: pointer;
         flex-shrink: 0;
       }
-      .toggle-switch input {
+      .ts input {
         opacity: 0;
         width: 0;
         height: 0;
         position: absolute;
       }
-      .toggle-track {
+      .tt {
         position: absolute;
         inset: 0;
-        background: var(--border);
-        border-radius: 9px;
-        transition: background 0.2s;
+        background: var(--border2);
+        border-radius: 8px;
+        transition: background 0.18s;
       }
-      .toggle-switch input:checked + .toggle-track {
-        background: var(--accent);
+      .ts input:checked + .tt {
+        background: var(--c1);
       }
-      .toggle-thumb {
+      .tk {
         position: absolute;
-        top: 3px;
-        left: 3px;
+        top: 2px;
+        left: 2px;
         width: 12px;
         height: 12px;
         background: #fff;
         border-radius: 50%;
-        transition: transform 0.2s;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        transition: transform 0.18s;
         pointer-events: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
       }
-      .toggle-switch input:checked ~ .toggle-thumb {
+      .ts input:checked ~ .tk {
         transform: translateX(14px);
       }
-
-      /* Search */
-      .search-wrap {
+      .sw {
         position: relative;
-        margin-bottom: 9px;
+        margin-bottom: 8px;
       }
-      .search-wrap input {
+      .sw input {
         width: 100%;
         background: var(--bg3);
-        border: 1px solid var(--border);
+        border: 1px solid var(--border2);
         color: var(--text);
-        padding: 6px 27px 6px 9px;
+        padding: 5px 24px 5px 8px;
         font-family: var(--font-mono);
-        font-size: 10px;
-        border-radius: 4px;
+        font-size: 9px;
+        border-radius: 3px;
         outline: none;
       }
-      .search-wrap input:focus {
-        border-color: var(--accent);
+      .sw input:focus {
+        border-color: var(--c1);
       }
-      .search-wrap input::placeholder {
+      .sw input::placeholder {
         color: var(--muted);
       }
-      .search-icon {
+      .si {
         position: absolute;
-        right: 8px;
+        right: 7px;
         top: 50%;
         transform: translateY(-50%);
         color: var(--muted);
         pointer-events: none;
-        font-size: 11px;
+        font-size: 10px;
       }
-      #search-results {
+      .sr2 {
         background: var(--bg3);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        max-height: 150px;
+        border: 1px solid var(--border2);
+        border-radius: 3px;
+        max-height: 140px;
         overflow-y: auto;
         display: none;
         margin-top: 2px;
@@ -363,99 +449,107 @@
         width: 100%;
         z-index: 50;
       }
-      .search-item {
-        padding: 6px 9px;
-        font-size: 10px;
+      .sri {
+        padding: 5px 8px;
+        font-size: 9px;
         cursor: pointer;
         color: var(--text);
         border-bottom: 1px solid var(--border);
         transition: background 0.1s;
+        font-family: var(--font-mono);
       }
-      .search-item:last-child {
+      .sri:last-child {
         border-bottom: none;
       }
-      .search-item:hover {
-        background: rgba(0, 229, 255, 0.06);
-        color: var(--accent);
+      .sri:hover {
+        background: rgba(0, 212, 255, 0.06);
+        color: var(--c1);
       }
 
-      /* Legend */
-      .legend-item {
+      /* ── LEGEND ITEMS ── */
+      .li {
         display: flex;
         align-items: center;
-        gap: 7px;
-        font-size: 10px;
-        color: var(--muted);
-        margin-bottom: 5px;
+        gap: 6px;
+        font-size: 9px;
+        color: var(--muted2);
+        margin-bottom: 4px;
         cursor: pointer;
-        border-radius: 3px;
+        border-radius: 2px;
         padding: 2px 3px;
         transition: background 0.1s;
       }
-      .legend-item.active {
-        color: var(--accent);
-        background: rgba(0, 229, 255, 0.03);
-        border-color: rgba(0, 229, 255, 0.06);
+      .li.active {
+        color: var(--c1);
+        background: rgba(0, 212, 255, 0.04);
       }
-      .legend-item:hover {
-        background: rgba(255, 255, 255, 0.04);
+      .li:hover {
+        background: rgba(255, 255, 255, 0.03);
       }
-      .legend-dot {
-        width: 9px;
-        height: 9px;
+      .ld {
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         flex-shrink: 0;
       }
-      .legend-count {
+      .lc2 {
         font-family: var(--font-mono);
-        font-size: 8px;
+        font-size: 7px;
         color: var(--muted);
         margin-left: auto;
       }
 
-      /* Top node list */
-      .node-list-item {
+      /* ── TOP LIST ── */
+      .nli {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 6px 0;
-        border-bottom: 1px solid rgba(30, 42, 58, 0.55);
+        gap: 7px;
+        padding: 5px 3px;
+        border-bottom: 1px solid rgba(26, 35, 51, 0.4);
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: 3px;
         transition: all 0.12s;
       }
-      .node-list-item:hover {
-        background: rgba(0, 229, 255, 0.04);
-        padding-left: 5px;
+      .nli:hover {
+        background: rgba(0, 212, 255, 0.04);
+        padding-left: 4px;
       }
-      .node-list-item.active {
-        background: rgba(0, 229, 255, 0.07);
-        padding-left: 5px;
+      .nli.active {
+        background: rgba(0, 212, 255, 0.07);
+        padding-left: 4px;
       }
-      .node-rank {
+      .nr {
         font-family: var(--font-mono);
-        font-size: 9px;
+        font-size: 8px;
         color: var(--muted);
-        width: 16px;
+        width: 14px;
         flex-shrink: 0;
       }
-      .node-name {
-        font-size: 10px;
+      .nn {
+        font-size: 9px;
         color: var(--text);
         flex: 1;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .node-badge {
+      .nb {
+        font-family: var(--font-mono);
+        font-size: 7px;
+        padding: 1px 5px;
+        border-radius: 6px;
+        background: rgba(0, 212, 255, 0.1);
+        color: var(--c1);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .pib {
         font-family: var(--font-mono);
         font-size: 8px;
         padding: 1px 5px;
-        border-radius: 8px;
-        background: rgba(0, 229, 255, 0.1);
-        color: var(--accent);
-        white-space: nowrap;
+        border-radius: 6px;
         flex-shrink: 0;
+        font-weight: 600;
       }
 
       /* ── MAIN ── */
@@ -471,144 +565,163 @@
         pointer-events: none;
         background-image:
           radial-gradient(
-            circle at 50% 35%,
-            rgba(0, 229, 255, 0.03) 0%,
-            transparent 65%
+            circle at 50% 38%,
+            rgba(0, 212, 255, 0.025) 0%,
+            transparent 60%
           ),
-          linear-gradient(var(--grid) 1px, transparent 1px),
-          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+          linear-gradient(rgba(0, 212, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 212, 255, 0.02) 1px, transparent 1px);
         background-size:
           auto,
-          42px 42px,
-          42px 42px;
+          44px 44px,
+          44px 44px;
       }
-
-      #network-svg {
+      #nsv {
         width: 100%;
         height: 100%;
         display: block;
         cursor: grab;
       }
-      #network-svg:active {
+      #nsv:active {
         cursor: grabbing;
       }
 
-      /* Toolbar */
-      #toolbar {
+      /* ── TOOLBAR ── */
+      #tb {
         position: absolute;
         top: 10px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
-        gap: 4px;
+        gap: 3px;
         z-index: 15;
       }
       .tbtn {
-        padding: 6px 12px;
-        font-size: 11px;
+        padding: 5px 11px;
+        font-size: 9px;
         font-family: var(--font-mono);
         text-transform: uppercase;
-        letter-spacing: 0.07em;
-        background: rgba(10, 14, 24, 0.88);
-        border: 1px solid var(--border);
-        color: var(--muted);
-        border-radius: 4px;
+        letter-spacing: 0.08em;
+        background: rgba(8, 12, 20, 0.9);
+        border: 1px solid var(--border2);
+        color: var(--muted2);
+        border-radius: 3px;
         cursor: pointer;
-        backdrop-filter: blur(10px);
-        transition: all 0.18s;
+        backdrop-filter: blur(12px);
+        transition: all 0.15s;
         white-space: nowrap;
       }
       .tbtn:hover {
-        border-color: var(--accent);
-        color: var(--accent);
+        border-color: var(--c1);
+        color: var(--c1);
       }
       .tbtn.active {
-        border-color: var(--accent);
-        color: var(--accent);
-        background: rgba(0, 229, 255, 0.07);
+        border-color: var(--c1);
+        color: var(--c1);
+        background: rgba(0, 212, 255, 0.07);
       }
-      .tbtn.lasso-active {
-        border-color: var(--amber) !important;
-        color: var(--amber) !important;
-        background: rgba(251, 191, 36, 0.07) !important;
+      .tbtn.lasso-on {
+        border-color: var(--c4) !important;
+        color: var(--c4) !important;
       }
-
-      #sel-badge {
+      #spath {
         position: absolute;
         top: 46px;
         right: 10px;
         z-index: 15;
-        background: rgba(10, 14, 24, 0.93);
-        border: 1px solid var(--accent3);
-        border-radius: 6px;
+        background: rgba(8, 12, 20, 0.95);
+        border: 1px solid var(--c3);
+        border-radius: 5px;
         padding: 6px 12px;
         font-family: var(--font-mono);
         font-size: 9px;
-        color: var(--accent3);
+        color: var(--c3);
         display: none;
-        backdrop-filter: blur(10px);
-        max-width: 60vw;
+        backdrop-filter: blur(12px);
+        max-width: 65vw;
         word-wrap: break-word;
-        box-shadow: 0 0 16px rgba(168, 85, 247, 0.15);
+        box-shadow: 0 0 20px rgba(185, 125, 255, 0.12);
       }
 
-      /* Tooltip */
-      #tooltip {
+      /* ── TOOLTIP ── */
+      #ttp {
         position: absolute;
-        background: rgba(10, 14, 22, 0.96);
-        border: 1px solid var(--accent);
-        border-radius: 7px;
-        padding: 10px 13px;
+        background: rgba(8, 12, 20, 0.97);
+        border: 1px solid var(--c1);
+        border-radius: 5px;
+        padding: 10px 12px;
         pointer-events: none;
-        max-width: 230px;
+        max-width: 240px;
         z-index: 100;
         display: none;
         box-shadow:
-          0 0 22px rgba(0, 229, 255, 0.15),
-          0 4px 20px rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(16px);
+          0 0 24px rgba(0, 212, 255, 0.15),
+          0 4px 20px rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(18px);
       }
-      .tt-name {
+      .tn {
         font-family: var(--font-mono);
-        font-size: 12px;
-        color: var(--accent);
-        margin-bottom: 6px;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 5px;
+        font-size: 11px;
+        color: var(--c1);
+        margin-bottom: 5px;
+        border-bottom: 1px solid var(--border2);
+        padding-bottom: 4px;
         word-break: break-all;
       }
-      .tt-role {
-        display: inline-block;
+      .tr {
         font-size: 8px;
-        padding: 2px 6px;
-        border-radius: 8px;
-        background: rgba(168, 85, 247, 0.14);
-        color: var(--accent3);
-        border: 1px solid rgba(168, 85, 247, 0.3);
-        margin-bottom: 5px;
+        padding: 1px 6px;
+        border-radius: 6px;
+        background: rgba(185, 125, 255, 0.12);
+        color: var(--c3);
+        border: 1px solid rgba(185, 125, 255, 0.25);
+        display: inline-block;
+        margin-bottom: 4px;
       }
-      .tt-row {
+      .trow {
         display: flex;
         justify-content: space-between;
-        font-size: 9px;
-        margin-bottom: 3px;
+        font-size: 8px;
+        margin-bottom: 2px;
         gap: 8px;
       }
-      .tt-key {
-        color: var(--muted);
+      .tk2 {
+        color: var(--muted2);
       }
-      .tt-val {
+      .tv {
         color: var(--text);
         font-family: var(--font-mono);
       }
-      .tt-hint {
-        font-size: 8px;
+      .th {
+        font-size: 7px;
         color: var(--muted);
-        margin-top: 5px;
+        margin-top: 4px;
+      }
+      /* Power bar in tooltip */
+      .tpow {
+        margin: 5px 0 3px;
+      }
+      .tpow-lbl {
+        font-size: 7px;
+        color: var(--muted2);
+        margin-bottom: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .tpow-bar {
+        height: 4px;
+        background: var(--border2);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .tpow-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s;
       }
 
-      /* Loading */
-      #loading {
+      /* ── LOADING ── */
+      #ld {
         position: absolute;
         inset: 0;
         background: var(--bg);
@@ -616,344 +729,530 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 16px;
+        gap: 14px;
         z-index: 200;
       }
-      .loader-ring {
-        width: 56px;
-        height: 56px;
-        border: 2px solid var(--border);
-        border-top-color: var(--accent);
+      .lring {
+        width: 48px;
+        height: 48px;
+        border: 2px solid var(--border2);
+        border-top-color: var(--c1);
         border-radius: 50%;
-        animation: spin 0.85s linear infinite;
+        animation: spin 0.8s linear infinite;
       }
       @keyframes spin {
         to {
           transform: rotate(360deg);
         }
       }
-      .loader-bar {
-        width: 180px;
+      .lbar {
+        width: 200px;
         height: 2px;
-        background: var(--border);
-        border-radius: 2px;
+        background: var(--border2);
+        border-radius: 1px;
         overflow: hidden;
       }
-      .loader-fill {
+      .lfill {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent), var(--accent3));
-        border-radius: 2px;
+        background: linear-gradient(90deg, var(--c1), var(--c3));
+        border-radius: 1px;
         transition: width 0.25s;
       }
-      .loader-text {
+      .ltxt {
         font-family: var(--font-mono);
-        font-size: 10px;
-        color: var(--muted);
-        letter-spacing: 0.1em;
+        font-size: 9px;
+        color: var(--muted2);
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
-      /* Keyboard help overlay */
-      #kbd-help {
+      /* ── KBD HELP ── */
+      #kh {
         position: fixed;
         inset: 0;
         z-index: 500;
-        background: rgba(5, 7, 13, 0.88);
+        background: rgba(6, 8, 15, 0.9);
         backdrop-filter: blur(16px);
         display: none;
         align-items: center;
         justify-content: center;
       }
-      #kbd-help.visible {
+      #kh.v {
         display: flex;
       }
-      .kbd-panel {
+      .kp {
         background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 24px 32px;
-        max-width: 420px;
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        padding: 22px 28px;
+        max-width: 400px;
         width: 90%;
       }
-      .kbd-panel h3 {
+      .kp h3 {
         font-family: var(--font-mono);
-        font-size: 13px;
-        color: var(--accent);
-        margin-bottom: 14px;
+        font-size: 11px;
+        color: var(--c1);
+        margin-bottom: 12px;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.14em;
       }
-      .kbd-row {
+      .kr {
         display: flex;
         justify-content: space-between;
         padding: 5px 0;
-        font-size: 11px;
-        border-bottom: 1px solid rgba(30, 42, 58, 0.4);
+        font-size: 10px;
+        border-bottom: 1px solid rgba(26, 35, 51, 0.4);
       }
-      .kbd-key {
+      .kk {
         font-family: var(--font-mono);
         background: var(--bg3);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 10px;
-        color: var(--accent);
+        border: 1px solid var(--border2);
+        border-radius: 3px;
+        padding: 2px 7px;
+        font-size: 9px;
+        color: var(--c1);
       }
-      .kbd-desc {
-        color: var(--muted);
+      .kd {
+        color: var(--muted2);
       }
 
-      /* SVG */
+      /* ── SVG CLASSES ── */
       .e-base {
-        stroke: #2e4a66;
-        stroke-opacity: 0.32;
+        stroke: #2a3f5f;
+        stroke-opacity: 0.28;
       }
       .e-base.dim {
-        stroke-opacity: 0.04;
+        stroke-opacity: 0.03;
       }
       .e-base.hi {
-        stroke: var(--accent) !important;
-        stroke-opacity: 1 !important;
+        stroke: var(--c1) !important;
+        stroke-opacity: 0.9 !important;
       }
-      .n-group {
+      .ng {
         cursor: pointer;
       }
-      .n-group.selected circle {
-        stroke: #ffffff !important;
+      .ng.selected circle {
+        stroke: #fff !important;
         stroke-width: 2.5 !important;
       }
-      .n-group.pinned circle {
-        stroke: var(--amber) !important;
+      .ng.pinned circle {
+        stroke: var(--c4) !important;
         stroke-width: 2 !important;
       }
-      .n-label {
+      .nlbl {
         font-family: var(--font-mono);
-        font-size: 10px;
-        fill: rgba(226, 232, 240, 0.72);
+        font-size: 9px;
+        fill: rgba(221, 228, 239, 0.65);
         pointer-events: none;
         text-anchor: middle;
       }
-      .n-label.hidden {
+      .nlbl.h {
         display: none;
       }
-      #lasso-box {
-        fill: rgba(251, 191, 36, 0.05);
-        stroke: var(--amber);
+      #lbox {
+        fill: rgba(255, 193, 61, 0.04);
+        stroke: var(--c4);
         stroke-width: 1;
         stroke-dasharray: 4 3;
         pointer-events: none;
       }
 
-      /* Right sidebar */
-      .chart-wrap {
-        padding: 13px;
+      /* ── RIGHT SIDEBAR ── */
+      .rtabs {
+        display: flex;
+        gap: 5px;
+        padding: 10px 12px;
+        background: var(--bg2);
         border-bottom: 1px solid var(--border);
       }
-      .chart-title {
-        font-size: 11px;
-        color: var(--accent3);
+      .rtab {
+        padding: 5px 10px;
+        background: var(--bg3);
+        border: 1px solid var(--border2);
+        color: var(--muted2);
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 10px;
+        font-family: var(--font-mono);
+        transition: all 0.15s;
+      }
+      .rtab.active {
+        border-color: var(--c1);
+        color: var(--c1);
+        background: rgba(0, 212, 255, 0.06);
+      }
+      .cw {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .ct {
+        font-size: 9px;
+        color: var(--c3);
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.14em;
         margin-bottom: 8px;
         display: flex;
         align-items: center;
         gap: 6px;
       }
-      /* Light theme overrides */
-      .light-theme {
-        --bg: #ffffff;
-        --bg2: #f7fafc;
-        --bg3: #ffffff;
-        --border: #e6eef6;
-        --accent: #006b75;
-        --accent2: #d6455b;
-        --accent3: #6b21a8;
-        --text: #071124;
-        --muted: #64748b;
-        --muted-text: #475569;
-        --grid: rgba(6, 182, 212, 0.03);
-      }
-
-      /* Collapsible sidebars - grid variants applied on #app */
-      #app.left-collapsed {
-        grid-template-columns: 0px 1fr 296px;
-      }
-      #app.right-collapsed {
-        grid-template-columns: 276px 1fr 0px;
-      }
-      #app.both-collapsed {
-        grid-template-columns: 0px 1fr 0px;
-      }
-      #sidebar-left.collapsed {
-        border-right: none;
-      }
-      #sidebar-right.collapsed {
-        border-left: none;
-      }
-      #sidebar-left.collapsed > *,
-      #sidebar-right.collapsed > * {
-        display: none;
-      }
-
-      /* Right tabs header */
-      .right-tabs-head {
-        display: flex;
-        gap: 6px;
-        padding: 10px 13px;
-        align-items: center;
-      }
-      .rtab {
-        padding: 6px 10px;
-        background: var(--bg3);
-        border: 1px solid var(--border);
-        color: var(--muted);
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 11px;
-      }
-      .rtab.active {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-      .chart-title::before {
+      .ct::before {
         content: "";
-        width: 5px;
-        height: 5px;
-        background: var(--accent3);
+        width: 4px;
+        height: 4px;
+        background: var(--c3);
         border-radius: 50%;
-        box-shadow: 0 0 5px var(--accent3);
+        box-shadow: 0 0 5px var(--c3);
         flex-shrink: 0;
       }
-      #node-detail {
-        padding: 13px;
+
+      /* ── NODE DETAIL ── */
+      #nd {
+        padding: 12px;
         display: none;
         border-bottom: 1px solid var(--border);
       }
-      .detail-name {
+      .dname {
         font-family: var(--font-mono);
         font-size: 13px;
-        color: var(--accent);
-        margin-bottom: 5px;
+        color: var(--c1);
+        margin-bottom: 4px;
         word-break: break-all;
       }
-      .detail-role {
+      .drole {
         display: inline-block;
-        font-size: 9px;
+        font-size: 8px;
         padding: 2px 8px;
-        border-radius: 10px;
-        background: rgba(168, 85, 247, 0.14);
-        color: var(--accent3);
-        border: 1px solid rgba(168, 85, 247, 0.28);
-        margin-bottom: 11px;
-      }
-      .metric-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px;
+        border-radius: 8px;
+        background: rgba(185, 125, 255, 0.12);
+        color: var(--c3);
+        border: 1px solid rgba(185, 125, 255, 0.25);
         margin-bottom: 10px;
       }
-      .metric-card {
+      .mg {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+      .mc {
         background: var(--bg3);
         border: 1px solid var(--border);
-        border-radius: 5px;
-        padding: 8px;
+        border-radius: 4px;
+        padding: 7px;
       }
-      .metric-val {
+      .mv {
         font-family: var(--font-mono);
         font-size: 13px;
         color: var(--text);
-        font-weight: 700;
-        line-height: 1.1;
+        font-weight: 600;
+        line-height: 1;
       }
-      .metric-lbl {
-        font-size: 8px;
-        color: var(--muted);
+      .ml {
+        font-size: 7px;
+        color: var(--muted2);
         text-transform: uppercase;
-        letter-spacing: 0.07em;
+        letter-spacing: 0.08em;
         margin-top: 2px;
       }
-      .nbr-title {
+      /* Power Index Big Display */
+      .pi-display {
+        background: var(--bg3);
+        border: 1px solid var(--border2);
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+        position: relative;
+        overflow: hidden;
+      }
+      .pi-display::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, var(--c1), var(--c3));
+      }
+      .pi-num {
+        font-family: var(--font-mono);
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--c1);
+      }
+      .pi-lbl {
+        font-size: 8px;
+        color: var(--muted2);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-top: 2px;
+      }
+      .pi-bar {
+        height: 3px;
+        background: var(--border2);
+        border-radius: 2px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+      .pi-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: linear-gradient(
+          90deg,
+          var(--c5),
+          var(--c1),
+          var(--c3),
+          var(--c2)
+        );
+      }
+      /* French & Raven Power Bars */
+      .frb {
+        margin-bottom: 10px;
+      }
+      .fr-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+      .fr-lbl {
+        font-size: 8px;
+        color: var(--muted2);
+        width: 70px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .fr-bar {
+        flex: 1;
+        height: 5px;
+        background: var(--border2);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .fr-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.4s;
+      }
+      .fr-val {
+        font-family: var(--font-mono);
+        font-size: 8px;
+        color: var(--text);
+        width: 16px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+      /* Evidence Quotes */
+      .eq {
+        margin-bottom: 10px;
+      }
+      .eq-title {
+        font-size: 8px;
+        color: var(--c4);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+      .eq-item {
+        background: var(--bg3);
+        border-left: 2px solid var(--c4);
+        border-radius: 0 3px 3px 0;
+        padding: 6px 8px;
+        margin-bottom: 5px;
         font-size: 9px;
-        color: var(--accent);
+        color: var(--text);
+        font-family: var(--font-mono);
+        line-height: 1.5;
+        word-break: break-word;
+      }
+      /* Analysis */
+      .an-box {
+        background: var(--bg3);
+        border: 1px solid var(--border2);
+        border-radius: 4px;
+        padding: 9px;
+        margin-bottom: 10px;
+      }
+      .an-title {
+        font-size: 8px;
+        color: var(--c3);
         text-transform: uppercase;
         letter-spacing: 0.12em;
         margin-bottom: 5px;
+        font-weight: 600;
       }
-      .nbr-list {
+      .an-text {
+        font-size: 9px;
+        color: var(--muted2);
+        line-height: 1.6;
+      }
+      /* Neighbours */
+      .nt {
+        font-size: 8px;
+        color: var(--c1);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 4px;
+      }
+      .nlist {
         display: flex;
         flex-direction: column;
         gap: 2px;
-        max-height: 110px;
+        max-height: 100px;
         overflow-y: auto;
       }
-      .nbr-item {
+      .nitem {
         display: flex;
         justify-content: space-between;
         font-size: 9px;
         font-family: var(--font-mono);
-        color: var(--muted);
+        color: var(--muted2);
         padding: 2px 0;
         cursor: pointer;
         transition: color 0.1s;
       }
-      .nbr-item:hover {
-        color: var(--accent);
+      .nitem:hover {
+        color: var(--c1);
       }
-      .nbr-weight {
-        color: var(--muted);
-      }
-      #multi-detail {
-        padding: 13px;
+
+      /* ── MULTI DETAIL ── */
+      #md {
+        padding: 12px;
         display: none;
         border-bottom: 1px solid var(--border);
       }
-      .multi-title {
-        font-size: 10px;
-        color: var(--amber);
+      .mdt {
+        font-size: 9px;
+        color: var(--c4);
         margin-bottom: 8px;
         font-family: var(--font-mono);
       }
-      #keyword-cloud {
-        padding: 13px;
+
+      /* ── CLOUD ── */
+      #kwc {
+        padding: 12px;
       }
-      .cloud-words {
+      .cwords {
         display: flex;
         flex-wrap: wrap;
         gap: 5px;
         align-items: center;
       }
-      .cloud-word {
+      .cw2 {
         font-family: var(--font-mono);
         cursor: default;
         color: var(--text);
         transition: all 0.2s;
         padding: 1px 3px;
-        border-radius: 3px;
+        border-radius: 2px;
       }
-      .cloud-word:hover {
-        color: var(--accent);
-        text-shadow: 0 0 9px var(--accent);
+      .cw2:hover {
+        color: var(--c1);
+        text-shadow: 0 0 8px var(--c1);
       }
-      /* Community stats table */
-      .comm-stats-table {
+
+      /* ── COMM TABLE ── */
+      .ctbl {
         width: 100%;
         border-collapse: collapse;
-        font-size: 9px;
+        font-size: 8px;
         font-family: var(--font-mono);
       }
-      .comm-stats-table th {
-        color: var(--accent);
+      .ctbl th {
+        color: var(--c1);
         text-transform: uppercase;
         letter-spacing: 0.07em;
-        font-size: 8px;
+        font-size: 7px;
         padding: 4px 3px;
         text-align: left;
         border-bottom: 1px solid var(--border);
       }
-      .comm-stats-table td {
+      .ctbl td {
         padding: 3px;
         color: var(--text);
-        border-bottom: 1px solid rgba(30, 42, 58, 0.3);
+        border-bottom: 1px solid rgba(26, 35, 51, 0.3);
+      }
+
+      /* ── POWER DISTRIBUTION PANEL ── */
+      .pwr-dist {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        margin-top: 6px;
+      }
+      .pwr-tier {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .pwr-tier-lbl {
+        font-size: 8px;
+        color: var(--muted2);
+        width: 60px;
+        flex-shrink: 0;
+        font-family: var(--font-mono);
+      }
+      .pwr-tier-bar {
+        flex: 1;
+        height: 6px;
+        background: var(--border2);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .pwr-tier-fill {
+        height: 100%;
+        border-radius: 3px;
+      }
+      .pwr-tier-cnt {
+        font-family: var(--font-mono);
+        font-size: 8px;
+        color: var(--muted2);
+        width: 24px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      /* ── COMMUNITY vs POWER TOGGLE ── */
+      .view-mode-btns {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+      .vm-btn {
+        flex: 1;
+        padding: 5px;
+        font-family: var(--font-mono);
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        border: 1px solid var(--border2);
+        background: var(--bg3);
+        color: var(--muted2);
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+      }
+      .vm-btn.active {
+        border-color: var(--c3);
+        color: var(--c3);
+        background: rgba(185, 125, 255, 0.07);
+      }
+
+      /* Light theme */
+      .light {
+        --bg: #f4f7fc;
+        --bg2: #eaeff7;
+        --bg3: #fff;
+        --bg4: #e0e7f0;
+        --border: #d0daea;
+        --border2: #b8c8de;
+        --text: #0a1422;
+        --muted: #7090b0;
+        --muted2: #5570a0;
+        --c1: #0078a8;
       }
     </style>
   </head>
@@ -961,391 +1260,396 @@
     <div id="app">
       <!-- HEADER -->
       <header>
+        <div class="header-center">
+          <a
+            href="https://github.com/mynkpdr/enron-sna"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View source on GitHub"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.292 6.532 5.47 7.59.4.074.547-.174.547-.386 0-.19-.007-.693-.01-1.36-2.226.483-2.695-1.073-2.695-1.073-.364-.924-.89-1.17-.89-1.17-.727-.497.055-.487.055-.487.803.057 1.226.825 1.226.825.714 1.223 1.873.87 2.33.665.072-.517.28-.87.509-1.07-1.777-.202-3.644-.888-3.644-3.953 0-.873.312-1.588.824-2.148-.083-.203-.357-1.017.078-2.12 0 0 .672-.215 2.2.82A7.658 7.658 0 018 4.845c.68.003 1.366.092 2.005.27 1.527-1.035 2.198-.82 2.198-.82.437 1.103.163 1.917.08 2.12.513.56.823 1.275.823 2.148 0 3.073-1.87 3.748-3.652 3.947.287.247.543.735.543 1.482 0 1.07-.01 1.93-.01 2.193 0 .214.145.462.55.384C13.71 14.53 16 11.54 16 8c0-4.42-3.58-8-8-8z"
+              />
+            </svg>
+          </a>
+        </div>
         <div class="logo">
-          ENRON <span>SNA</span> // Network Intelligence Dashboard
+          ENRON <em>SNA</em
+          ><small
+            >Shadow Organization Intelligence v2 ·
+            <a
+              href="https://github.com/mynkpdr/enron-sna"
+              target="_blank"
+              rel="noopener noreferrer"
+              style="color: var(--c1); text-decoration: none"
+              >Source</a
+            ></small
+          >
         </div>
         <div
           style="
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
-            margin-left: 12px;
+            margin-left: 10px;
           "
         >
-          <button
-            class="btn"
-            id="btn-collapse-left"
-            title="Collapse left sidebar"
-          >
-            &lt;
-          </button>
-          <button class="btn" id="btn-theme" title="Toggle light theme">
-            ☼
-          </button>
-          <button
-            class="btn"
-            id="btn-collapse-right"
-            title="Collapse right sidebar"
-          >
-            &gt;
-          </button>
+          <button class="hbtn" id="bcl" title="Collapse left">&lsaquo;</button>
+          <button class="hbtn" id="bth" title="Toggle theme">&#9788;</button>
+          <button class="hbtn" id="bcr" title="Collapse right">&rsaquo;</button>
         </div>
-        <div class="header-stats">
-          <div class="hstat">
-            <span class="hstat-val" id="stat-emails">—</span
-            ><span class="hstat-lbl">Emails</span>
+        <div class="hstats">
+          <div class="hs">
+            <span class="hs-v" id="s-em">—</span
+            ><span class="hs-l">Emails</span>
           </div>
-          <div class="hstat">
-            <span class="hstat-val" id="stat-nodes">—</span
-            ><span class="hstat-lbl">Nodes</span>
+          <div class="hs">
+            <span class="hs-v" id="s-nd">—</span><span class="hs-l">Nodes</span>
           </div>
-          <div class="hstat">
-            <span class="hstat-val" id="stat-edges">—</span
-            ><span class="hstat-lbl">Edges</span>
+          <div class="hs">
+            <span class="hs-v" id="s-ed">—</span><span class="hs-l">Edges</span>
           </div>
-          <div class="hstat">
-            <span class="hstat-val" id="stat-comms">—</span
-            ><span class="hstat-lbl">Communities</span>
+          <div class="hs">
+            <span class="hs-v" id="s-cm">—</span
+            ><span class="hs-l">Communities</span>
           </div>
-          <div class="hstat">
-            <span class="hstat-val" id="stat-density">—</span
-            ><span class="hstat-lbl">Density</span>
+          <div class="hs">
+            <span class="hs-v" id="s-dn">—</span
+            ><span class="hs-l">Density</span>
           </div>
-          <div class="hstat">
-            <span class="hstat-val" id="stat-dates">—</span
-            ><span class="hstat-lbl">Date Range</span>
+          <div class="hs">
+            <span class="hs-v" id="s-dt">—</span
+            ><span class="hs-l">Period</span>
           </div>
         </div>
       </header>
 
       <!-- LEFT SIDEBAR -->
-      <div id="sidebar-left">
-        <div class="panel-section">
-          <div class="panel-title">Search Nodes</div>
-          <div class="search-wrap">
-            <input type="text" id="node-search" placeholder="name or email…" />
-            <span class="search-icon">⌕</span>
-            <div id="search-results"></div>
+      <div id="sl">
+        <div class="ps">
+          <div class="pt">Search Node</div>
+          <div class="sw">
+            <input type="text" id="nsrch" placeholder="name or email…" /><span
+              class="si"
+              >⌕</span
+            >
+            <div class="sr2" id="nsr"></div>
           </div>
         </div>
-
-        <div class="panel-section">
-          <div class="panel-title">Path</div>
-          <label>From</label>
-          <div class="search-wrap">
-            <input type="text" id="path-from" placeholder="name or email…" />
-            <span class="search-icon">⌕</span>
-            <div id="path-from-results"></div>
+        <div class="ps">
+          <div class="pt">Shortest Path</div>
+          <label for="pf">From</label>
+          <div class="sw">
+            <input type="text" id="pf" placeholder="name or email…" /><span
+              class="si"
+              >⌕</span
+            >
+            <div class="sr2" id="pfr"></div>
           </div>
-          <label>To</label>
-          <div class="search-wrap">
-            <input type="text" id="path-to" placeholder="name or email…" />
-            <span class="search-icon">⌕</span>
-            <div id="path-to-results"></div>
+          <label for="pt2">To</label>
+          <div class="sw">
+            <input type="text" id="pt2" placeholder="name or email…" /><span
+              class="si"
+              >⌕</span
+            >
+            <div class="sr2" id="ptr"></div>
           </div>
-          <div class="btn-row" style="margin-bottom: 0">
-            <button class="btn" id="btn-path-find">Find Path</button>
-            <button class="btn red" id="btn-path-clear">Clear</button>
+          <div class="br" style="margin-bottom: 0">
+            <button class="btn" id="bpf">Find Path</button
+            ><button class="btn r" id="bpc">Clear</button>
           </div>
         </div>
-
-        <div class="panel-section">
-          <div class="panel-title">Network Filter</div>
-          <label
-            >Min. Edge Weight (1/N sum, log scale)
-            <span class="slider-val" id="weight-val">8.0</span></label
-          >
-          <input type="range" id="slider-weight" min="0" max="100" value="29" />
-          <label
-            >Max. Nodes
-            <span class="slider-val" id="nodes-val">500</span></label
-          >
+        <div class="ps">
+          <div class="pt">Network Filter</div>
+          <label for="sw2">Min Edge Weight<span class="sv" id="wv">8.0</span></label>
+          <input type="range" id="sw2" min="0" max="100" value="29" />
+          <label for="smn">Max Nodes<span class="sv" id="mnv">500</span></label>
           <input
             type="range"
-            id="slider-nodes"
+            id="smn"
             min="20"
             max="500"
             value="500"
             step="10"
           />
-          <label
-            >Sphere Radius
-            <span class="slider-val" id="dist-val">38</span></label
-          >
-          <input
-            type="range"
-            id="slider-dist"
-            min="10"
-            max="60"
-            value="38"
-            step="1"
-          />
-          <label
-            >Spin Speed <span class="slider-val" id="rep-val">15</span></label
-          >
-          <input
-            type="range"
-            id="slider-rep"
-            min="0"
-            max="20"
-            value="15"
-            step="1"
-          />
+          <label for="sdr">Sphere Radius<span class="sv" id="drv">38</span></label>
+          <input type="range" id="sdr" min="10" max="60" value="38" step="1" />
+          <label for="ssp">Spin Speed<span class="sv" id="spv">15</span></label>
+          <input type="range" id="ssp" min="0" max="20" value="15" step="1" />
         </div>
-
-        <div class="panel-section">
-          <div class="panel-title">Visual Encoding</div>
-          <label>Node Size by</label>
-          <select id="sel-size">
+        <div class="ps">
+          <div class="pt">Visual Encoding</div>
+          <div class="view-mode-btns">
+            <div
+              class="vm-btn active"
+              id="vm-comm"
+              title="Color by community clusters"
+            >
+              Community View
+            </div>
+            <div class="vm-btn" id="vm-power" title="Color by LLM power index">
+              Power View
+            </div>
+            <div
+              class="vm-btn"
+              id="vm-role"
+              title="Color by inferred informal role"
+            >
+              Role View
+            </div>
+          </div>
+          <label for="ssz">Node Size by</label>
+          <select id="ssz">
             <option value="pagerank">PageRank</option>
+            <option value="power_index">LLM Power Index</option>
             <option value="betweenness">Betweenness Centrality</option>
             <option value="weighted_degree">Weighted Degree</option>
             <option value="unique_contacts">Unique Contacts</option>
             <option value="sent">Emails Sent</option>
             <option value="received">Emails Received</option>
           </select>
-          <label>Color by</label>
-          <select id="sel-color">
-            <option value="community">Community (Louvain)</option>
-            <option value="inferred_role">Inferred Role</option>
-            <option value="betweenness">Betweenness</option>
-            <option value="pagerank">PageRank</option>
-          </select>
         </div>
-
-        <div class="panel-section">
-          <div class="panel-title">Display Options</div>
-          <div class="toggle-row">
-            <span class="toggle-label">Show Labels</span>
-            <label class="toggle-switch"
-              ><input type="checkbox" id="tog-labels" />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div
+        <div class="ps">
+          <div class="pt">Display Options</div>
+          <div class="tr-row">
+            <span class="tr-l">Show Labels</span
+            ><label class="ts"
+              ><input type="checkbox" id="tl" />
+              <div class="tt"></div>
+              <div class="tk"></div
             ></label>
           </div>
-          <div class="toggle-row">
-            <span class="toggle-label">Top nodes only</span>
-            <label class="toggle-switch"
-              ><input type="checkbox" id="tog-toplabels" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div
+          <div class="tr-row">
+            <span class="tr-l">Top nodes only</span
+            ><label class="ts"
+              ><input type="checkbox" id="ttl" checked />
+              <div class="tt"></div>
+              <div class="tk"></div
             ></label>
           </div>
-          <div class="toggle-row">
-            <span class="toggle-label">Show isolated nodes</span>
-            <label class="toggle-switch"
-              ><input type="checkbox" id="tog-isolated" />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div
+          <div class="tr-row">
+            <span class="tr-l">Show isolated nodes</span
+            ><label class="ts"
+              ><input type="checkbox" id="tis" />
+              <div class="tt"></div>
+              <div class="tk"></div
             ></label>
           </div>
-          <div class="toggle-row">
-            <span class="toggle-label">Edge width by weight</span>
-            <label class="toggle-switch"
-              ><input type="checkbox" id="tog-edgewidth" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div
+          <div class="tr-row">
+            <span class="tr-l">Edge width by weight</span
+            ><label class="ts"
+              ><input type="checkbox" id="tew" checked />
+              <div class="tt"></div>
+              <div class="tk"></div
             ></label>
           </div>
         </div>
-
-        <div class="panel-section">
-          <div class="panel-title">View Controls</div>
-          <div class="btn-row">
-            <button class="btn" id="btn-play">↻ Auto-Spin</button>
-            <button class="btn" id="btn-pause">⏸ Stop</button>
+        <div class="ps">
+          <div class="pt">View Controls</div>
+          <div class="br">
+            <button class="btn" id="bpl">↻ Spin</button
+            ><button class="btn" id="bst">⏸ Stop</button>
           </div>
-          <div class="btn-row">
-            <button class="btn" id="btn-reset">↺ Rebuild</button>
-            <button class="btn" id="btn-fit">⊡ Fit</button>
-            <button class="btn red" id="btn-unpin">Unpin All</button>
+          <div class="br">
+            <button class="btn" id="brb">↺ Rebuild</button
+            ><button class="btn" id="bft">⊡ Fit</button
+            ><button class="btn r" id="bup">Unpin All</button>
           </div>
         </div>
-
-        <div class="panel-section" id="community-panel">
-          <div class="panel-title purple">Community Legend</div>
-          <div id="legend-container"></div>
+        <div class="ps" id="cp">
+          <div class="pt purple">Community Legend</div>
+          <div id="cl"></div>
         </div>
-
-        <div class="panel-section" id="role-panel">
-          <div class="panel-title">Role Legend</div>
-          <div id="role-legend-container"></div>
+        <div class="ps" id="rp" style="display: none">
+          <div class="pt">Role Legend</div>
+          <div id="rl"></div>
         </div>
-
-        <div class="panel-section" id="metric-panel" style="display: none">
-          <div class="panel-title">Metric Legend</div>
-          <div id="metric-legend-container"></div>
+        <div class="ps" id="pp" style="display: none">
+          <div class="pt red">Power Legend</div>
+          <div id="pl"></div>
         </div>
-
-        <div class="panel-section" id="topnodes-panel">
-          <div class="panel-title amber" id="topnodes-title">Top 20</div>
-          <div id="top-nodes-list"></div>
+        <div class="ps" id="tp">
+          <div class="pt amber" id="ttitle">Top 20 by PageRank</div>
+          <div id="tnl"></div>
         </div>
       </div>
 
-      <!-- MAIN CANVAS -->
+      <!-- MAIN -->
       <div id="main">
-        <div id="loading">
-          <div class="loader-ring"></div>
-          <div class="loader-bar">
-            <div class="loader-fill" id="loader-fill"></div>
-          </div>
-          <div class="loader-text" id="loading-msg">Initialising…</div>
+        <div id="ld">
+          <div class="lring"></div>
+          <div class="lbar"><div class="lfill" id="lf"></div></div>
+          <div class="ltxt" id="lm">Initialising…</div>
         </div>
-
-        <div id="toolbar">
-          <button class="tbtn active" id="tb-select">☰ Select</button>
-          <button class="tbtn" id="tb-lasso">⬡ Lasso</button>
+        <div id="tb">
+          <button class="tbtn active" id="tb-sel">☰ Select</button>
+          <button class="tbtn" id="tb-las">⬡ Lasso</button>
           <button class="tbtn" id="tb-pan">✥ Pan</button>
-          <button class="tbtn" id="tb-labels">Ⓐ Labels</button>
-          <button class="tbtn" id="tb-ego" title="Ego Network: Select a node then click this (or press E) to see only its direct neighbors">👤 Ego</button>
-          <button class="tbtn" id="tb-path">⇄ Path</button>
+          <button class="tbtn" id="tb-lbl">Ⓐ Labels</button>
+          <button class="tbtn" id="tb-ego">👤 Ego</button>
+          <button class="tbtn" id="tb-pth">⇄ Path</button>
           <button class="tbtn" id="tb-png">⬇ PNG</button>
-          <button class="tbtn" id="tb-json">{ } JSON</button>
-          <button class="tbtn" id="tb-help">? Help</button>
+          <button class="tbtn" id="tb-jsn">{ } JSON</button>
+          <button class="tbtn" id="tb-hlp">? Help</button>
         </div>
-
-        <div id="sel-badge"></div>
-
-        <svg id="network-svg">
+        <div id="spath"></div>
+        <svg id="nsv">
           <defs>
-            <filter id="glow-f" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3.5" result="b" />
+            <filter id="gf" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="b" />
               <feMerge>
                 <feMergeNode in="b" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
           </defs>
-          <rect
-            id="lasso-box"
-            display="none"
-            x="0"
-            y="0"
-            width="0"
-            height="0"
-          />
+          <rect id="lbox" display="none" x="0" y="0" width="0" height="0" />
         </svg>
-
-        <div id="tooltip"></div>
+        <div id="ttp"></div>
       </div>
 
       <!-- RIGHT SIDEBAR -->
-      <div id="sidebar-right">
-        <div class="right-tabs-head">
-          <div class="rtab active" id="rtab-overview">Overview</div>
-          <div class="rtab" id="rtab-analytics">Analytics</div>
-          <div class="rtab" id="rtab-selected">Selected</div>
+      <div id="sr">
+        <div class="rtabs">
+          <div class="rtab active" id="rt-ov">Overview</div>
+          <div class="rtab" id="rt-an">Analytics</div>
+          <div class="rtab" id="rt-sl">Selected</div>
         </div>
-        <div id="tab-overview">
-          <div class="chart-wrap">
-            <div class="chart-title">Community Sizes</div>
-            <canvas id="chart-community" height="150"></canvas>
+        <div id="tab-ov">
+          <div class="cw">
+            <div class="ct">Community Sizes</div>
+            <canvas id="chc" height="150"></canvas>
           </div>
-
-          <div id="keyword-cloud">
-            <div class="chart-title">Subject Keywords</div>
-            <div class="cloud-words" id="cloud-words"></div>
+          <div class="cw">
+            <div class="ct">Power Index Distribution</div>
+            <canvas id="chp" height="110"></canvas>
           </div>
-        </div>
-
-        <div id="tab-analytics" style="display: none">
-          <div class="chart-wrap">
-            <div class="chart-title">Email Volume Timeline</div>
-            <canvas id="chart-timeline" height="140"></canvas>
-          </div>
-          <div class="chart-wrap">
-            <div class="chart-title">Degree Distribution (log-log)</div>
-            <canvas id="chart-degdist" height="140"></canvas>
-          </div>
-          <div class="chart-wrap">
-            <div class="chart-title">Community Stats</div>
-            <div id="comm-stats-container"></div>
+          <div class="cw" id="kwc">
+            <div class="ct">Subject Keywords</div>
+            <div class="cwords" id="kw"></div>
           </div>
         </div>
-
-        <div id="tab-selected" style="display: none">
-          <div id="node-detail">
-            <div class="detail-name" id="dd-name">—</div>
-            <div class="detail-role" id="dd-role">—</div>
-            <div class="metric-grid" id="dd-metrics"></div>
-            <div class="nbr-title">Neighbours</div>
+        <div id="tab-an" style="display: none">
+          <div class="cw">
+            <div class="ct">Email Volume Timeline</div>
+            <canvas id="chtl" height="130"></canvas>
+          </div>
+          <div class="cw">
+            <div class="ct">Degree Distribution (log-log)</div>
+            <canvas id="chdd" height="130"></canvas>
+          </div>
+          <div class="cw">
+            <div class="ct">Power Tier Breakdown</div>
+            <div id="ptb"></div>
+          </div>
+          <div class="cw">
+            <div class="ct">Community Stats</div>
+            <div id="cst"></div>
+          </div>
+        </div>
+        <div id="tab-sl" style="display: none">
+          <div id="nd">
+            <div class="dname" id="dd-name">—</div>
+            <div class="drole" id="dd-role">—</div>
+            <!-- Power Index -->
+            <div class="pi-display">
+              <div style="display: flex; align-items: baseline; gap: 10px">
+                <div class="pi-num" id="dd-pi">—</div>
+                <div style="flex: 1">
+                  <div class="pi-lbl">Overall Power Index (LLM)</div>
+                  <div class="pi-bar">
+                    <div class="pi-fill" id="dd-pibar" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Network Metrics Grid -->
+            <div class="mg" id="dd-met"></div>
+            <!-- French & Raven Power Bases -->
+            <div class="frb" id="dd-frb"></div>
+            <!-- Evidence Quotes -->
+            <div class="eq" id="dd-eq" style="display: none">
+              <div class="eq-title">Evidence Quotes</div>
+              <div id="dd-quotes"></div>
+            </div>
+            <!-- LLM Analysis -->
+            <div class="an-box" id="dd-an" style="display: none">
+              <div class="an-title">Academic Analysis (LLM)</div>
+              <div class="an-text" id="dd-analysis"></div>
+            </div>
+            <div class="nt">Neighbours</div>
             <div
-              class="nbr-list-headers"
               style="
                 display: flex;
                 justify-content: space-between;
-                padding: 4px 6px 8px;
-                font-size: 10px;
-                color: var(--muted);
+                padding: 3px 0 6px;
+                font-size: 8px;
+                color: var(--muted2);
               "
             >
-              <div>Contact</div>
-              <div style="text-align: right; min-width: 36px">Edge weight</div>
+              <span>Contact</span><span>Weight</span>
             </div>
-            <div class="nbr-list" id="dd-neighbours"></div>
+            <div class="nlist" id="dd-nbr"></div>
           </div>
-
-          <div id="multi-detail">
-            <div class="multi-title" id="multi-title">0 nodes selected</div>
-            <div class="metric-grid" id="multi-metrics"></div>
-            <div class="btn-row">
-              <button class="btn" id="btn-focus-sub">⊠ Only Selected</button>
-              <button class="btn red" id="btn-clear-sel">✕ Clear</button>
+          <div id="md">
+            <div class="mdt" id="md-t">0 nodes selected</div>
+            <div class="mg" id="md-m"></div>
+            <div class="br">
+              <button class="btn" id="bfs">⊠ Only Selected</button
+              ><button class="btn r" id="bcs">✕ Clear</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Keyboard Help Overlay -->
-    <div id="kbd-help">
-      <div class="kbd-panel">
+    <!-- KBD HELP -->
+    <div id="kh">
+      <div class="kp">
         <h3>Keyboard Shortcuts</h3>
-        <div class="kbd-row">
-          <span class="kbd-desc">Lasso mode</span><span class="kbd-key">L</span>
+        <div class="kr">
+          <span class="kd">Lasso mode</span><span class="kk">L</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Pan mode</span><span class="kbd-key">P</span>
+        <div class="kr">
+          <span class="kd">Pan mode</span><span class="kk">P</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Rebuild graph</span
-          ><span class="kbd-key">R</span>
+        <div class="kr">
+          <span class="kd">Ego network</span><span class="kk">E</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Fit to view</span
-          ><span class="kbd-key">F</span>
+        <div class="kr">
+          <span class="kd">Rebuild graph</span><span class="kk">R</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Toggle labels</span
-          ><span class="kbd-key">H</span>
+        <div class="kr">
+          <span class="kd">Fit to view</span><span class="kk">F</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Clear selection / Exit</span
-          ><span class="kbd-key">Esc</span>
+        <div class="kr">
+          <span class="kd">Toggle labels</span><span class="kk">H</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Multi-select</span
-          ><span class="kbd-key">Shift + Click</span>
+        <div class="kr">
+          <span class="kd">Clear / Exit</span><span class="kk">Esc</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Pin / Unpin node</span
-          ><span class="kbd-key">Double-click</span>
+        <div class="kr">
+          <span class="kd">Multi-select</span
+          ><span class="kk">Shift+Click</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Shortest path (click from, click to)</span
-          ><span class="kbd-key">Path Tool or Alt+Click</span>
+        <div class="kr">
+          <span class="kd">Pin / Unpin</span
+          ><span class="kk">Double-click</span>
         </div>
-        <div class="kbd-row">
-          <span class="kbd-desc">Show this help</span
-          ><span class="kbd-key">?</span>
+        <div class="kr">
+          <span class="kd">Shortest path</span
+          ><span class="kk">Alt+Click or Path Tool</span>
         </div>
-        <div style="text-align: center; margin-top: 14px">
+        <div style="text-align: center; margin-top: 12px">
           <button
             class="btn"
-            onclick="
-              document.getElementById('kbd-help').classList.remove('visible')
-            "
+            onclick="document.getElementById('kh').classList.remove('v')"
           >
             Close
           </button>
@@ -1355,14 +1659,25 @@
 
     <script>
       "use strict";
+      const FOLDER = "sna_output/";
+      const FILEMAP = {
+        graph_data: "graph_data.json",
+        enriched: "llm_deep_enriched_nodes.json",
+        communities: "communities.json",
+        keywords: "keywords.json",
+        stats: "stats.json",
+        timeline: "timeline.json",
+        degree_dist: "degree_dist.json",
+        top_nodes: "top_nodes.json",
+      };
 
-      // ── PALETTE ─────────────────────────────────────────────────
-      const COMM_PAL = [
-        "#00e5ff",
-        "#ff4d6d",
-        "#a855f7",
-        "#fbbf24",
-        "#22c55e",
+      /* ── PALETTE ── */
+      const CPAL = [
+        "#00d4ff",
+        "#ff3d5a",
+        "#b97dff",
+        "#ffc13d",
+        "#3dff9a",
         "#f97316",
         "#3b82f6",
         "#ec4899",
@@ -1377,17 +1692,29 @@
         "#34d399",
         "#60a5fa",
       ];
-      const ROLE_COL = {
-        "Executive / Broker": "#ff4d6d",
-        "Information Broker": "#fbbf24",
-        Broadcaster: "#a855f7",
-        "Information Sink": "#22c55e",
-        Connector: "#00e5ff",
-        "Regular Employee": "#475569",
+      const RCOL = {
+        "Executive / Broker": "#ff3d5a",
+        "Information Broker": "#ffc13d",
+        Broadcaster: "#b97dff",
+        "Information Sink": "#3dff9a",
+        Connector: "#00d4ff",
+        "Regular Employee": "#4a5a72",
       };
-      const commColor = (id) =>
-        COMM_PAL[((id % COMM_PAL.length) + COMM_PAL.length) % COMM_PAL.length];
-      const roleColor = (r) => ROLE_COL[(r || "").trim()] || "#475569";
+      const cc = (id) => CPAL[((id % CPAL.length) + CPAL.length) % CPAL.length];
+      const rc = (r) => RCOL[(r || "").trim()] || "#4a5a72";
+      const piColor = (v) => {
+        if (v >= 80) return "#ff3d5a";
+        if (v >= 60) return "#ffc13d";
+        if (v >= 40) return "#3dff9a";
+        if (v >= 20) return "#00d4ff";
+        return "#4a5a72";
+      };
+      const frColors = {
+        expert: "#00d4ff",
+        referent: "#3dff9a",
+        legitimate: "#ffc13d",
+        coercive: "#ff3d5a",
+      };
       const fmt = (n) =>
         n >= 1e6
           ? (n / 1e6).toFixed(1) + "M"
@@ -1395,7 +1722,7 @@
             ? (n / 1e3).toFixed(0) + "K"
             : "" + n;
 
-      // ── STATE ────────────────────────────────────────────────────
+      /* ── STATE ── */
       const ST = {
         showLabels: false,
         topOnly: true,
@@ -1407,33 +1734,22 @@
         _dragging: false,
         isolate: false,
         egoNode: null,
-        opts: {
-          maxN: 500,
-          minW: 8.0,
-          sz: "pagerank",
-          col: "community",
-          dist: 38,
-          rep: 15,
-        },
+        colorMode: "community",
+        opts: { maxN: 500, minW: 8.0, sz: "pagerank", dist: 38, rep: 15 },
       };
       let RAW = {},
-        sim = null,
-        ZM = null,
-        gMain,
-        gEdges,
-        gNodes,
         Ns,
         Es,
-        Ls;
-      let ND = [],
+        Ls,
+        ND = [],
         ED = [],
         q85 = 0,
         isRunning = false;
-      let RC = {};
-      let DT = {};
-      let _szSc, _stSc, _getColorFn; // shared scale refs for refreshVisuals
+      let RC = {},
+        DT = {};
+      let _szSc, _stSc, _getColorFn;
 
-      // ── SPHERE GLOBALS ───────────────────────────────────────────
+      /* ── SPHERE GLOBALS ── */
       let SPHERE_ROT = [
         [1, 0, 0],
         [0, 1, 0],
@@ -1448,196 +1764,135 @@
       let _dragX0 = 0,
         _dragY0 = 0;
 
-      // ── SPHERE MATH ──────────────────────────────────────────────
-      function matVec(m, v) {
-        return [
-          m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
-          m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
-          m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2],
-        ];
-      }
-      function matMul(a, b) {
-        return a.map((r, i) =>
+      /* ── SPHERE MATH ── */
+      const matVec = (m, v) => [
+        m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
+        m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
+        m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2],
+      ];
+      const matMul = (a, b) =>
+        a.map((r, i) =>
           b[0].map((_, j) => r.reduce((s, _, k) => s + a[i][k] * b[k][j], 0)),
         );
-      }
-      function rotAxisAngle(ax, ay, az, angle) {
-        const c = Math.cos(angle),
-          s = Math.sin(angle),
+      const rotAA = (ax, ay, az, a) => {
+        const c = Math.cos(a),
+          s = Math.sin(a),
           t = 1 - c;
         return [
           [t * ax * ax + c, t * ax * ay - s * az, t * ax * az + s * ay],
           [t * ax * ay + s * az, t * ay * ay + c, t * ay * az - s * ax],
           [t * ax * az - s * ay, t * ay * az + s * ax, t * az * az + c],
         ];
-      }
-      function normalize3(v) {
+      };
+      const n3 = (v) => {
         const m = Math.hypot(v[0], v[1], v[2]) || 1;
         return [v[0] / m, v[1] / m, v[2] / m];
-      }
-      function cross3(a, b) {
-        return [
-          a[1] * b[2] - a[2] * b[1],
-          a[2] * b[0] - a[0] * b[2],
-          a[0] * b[1] - a[1] * b[0],
-        ];
+      };
+      const cross3 = (a, b) => [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+      ];
+
+      /* ── ENRICHED NODE MAP ── */
+      let ENODE = {};
+      function buildEnrichedMap() {
+        ENODE = {};
+        (RAW.enriched || []).forEach((n) => {
+          ENODE[n.email] = n.deep_profile || {};
+        });
       }
 
-      // ── LOAD ────────────────────────────────────────────────────
-      const FILES = [
-        "graph_data",
-        "keywords",
-        "top_nodes",
-        "communities",
-        "stats",
-        "timeline",
-        "degree_dist",
-      ];
+      /* ── LOAD ── */
       async function loadAll() {
-        for (let i = 0; i < FILES.length; i++) {
-          setLoad(`Loading ${FILES[i]}.json…`, (i / FILES.length) * 80);
+        const keys = Object.keys(FILEMAP);
+        for (let i = 0; i < keys.length; i++) {
+          const k = keys[i];
+          setLoad(`Loading ${k}.json…`, (i / keys.length) * 80);
           try {
-            const r = await fetch(`sna_output/${FILES[i]}.json`);
+            const r = await fetch(FOLDER + FILEMAP[k]);
             if (!r.ok) throw 0;
-            RAW[FILES[i]] = await r.json();
+            RAW[k] = await r.json();
           } catch {
-            RAW[FILES[i]] =
-              FILES[i] === "graph_data"
+            RAW[k] =
+              k === "graph_data"
                 ? { nodes: [], edges: [] }
-                : FILES[i] === "stats"
+                : k === "stats"
                   ? {}
                   : [];
           }
-          await pause(18);
+          await pause(15);
         }
+        buildEnrichedMap();
       }
       const pause = (ms) => new Promise((r) => setTimeout(r, ms));
       function setLoad(m, p) {
-        document.getElementById("loading-msg").textContent = m;
-        if (p != null)
-          document.getElementById("loader-fill").style.width = p + "%";
+        document.getElementById("lm").textContent = m;
+        if (p != null) document.getElementById("lf").style.width = p + "%";
       }
       function hideLd() {
-        const e = document.getElementById("loading");
+        const e = document.getElementById("ld");
         e.style.transition = "opacity .4s";
         e.style.opacity = 0;
         setTimeout(() => (e.style.display = "none"), 420);
       }
 
-      // ── STATS ────────────────────────────────────────────────────
+      /* ── STATS ── */
       function renderStats(s) {
-        document.getElementById("stat-emails").textContent = fmt(
-          s.total_emails || 0,
+        document.getElementById("s-em").textContent = fmt(s.total_emails || 0);
+        document.getElementById("s-nd").textContent = fmt(s.total_nodes || 0);
+        document.getElementById("s-ed").textContent = fmt(s.total_edges || 0);
+        document.getElementById("s-cm").textContent = s.n_communities || "—";
+        document.getElementById("s-dn").textContent = (s.density || 0).toFixed(
+          4,
         );
-        document.getElementById("stat-nodes").textContent = fmt(
-          s.total_nodes || 0,
-        );
-        document.getElementById("stat-edges").textContent = fmt(
-          s.total_edges || 0,
-        );
-        document.getElementById("stat-comms").textContent =
-          s.n_communities || "—";
-        document.getElementById("stat-density").textContent = (
-          s.density || 0
-        ).toFixed(4);
         const a = (s.date_range_start || "").slice(0, 7),
           b = (s.date_range_end || "").slice(0, 7);
-        document.getElementById("stat-dates").textContent =
-          a && b ? `${a} → ${b}` : "—";
+        document.getElementById("s-dt").textContent =
+          a && b ? `${a}→${b}` : "—";
       }
 
-      // ── COMMUNITY LEGEND ────────────────────────────────────────
+      /* ── COMMUNITY LEGEND ── */
       function renderCommLegend(comms) {
-        const el = document.getElementById("legend-container");
+        const el = document.getElementById("cl");
         el.innerHTML = "";
         (comms || []).slice(0, 12).forEach((c) => {
           const d = document.createElement("div");
-          d.className = "legend-item";
-          d.innerHTML = `<div class="legend-dot" style="background:${commColor(c.community_id)}"></div>Comm. ${c.community_id}<span class="legend-count">${c.size}</span>`;
-          d.addEventListener("click", () => selectCommunity(c.community_id));
+          d.className = "li";
+          d.innerHTML = `<div class="ld" style="background:${cc(c.community_id)}"></div>Comm. ${c.community_id} <span class="lc2">${c.size}</span>`;
+          d.onclick = () => selComm(c.community_id);
           el.appendChild(d);
         });
       }
-
-      function renderMetricLegend(metric) {
-        const el = document.getElementById("metric-legend-container");
-        if (!el) return;
-        el.innerHTML = "";
-        if (!ND || !ND.length) return;
-        const vals = ND.map((n) => +(n[metric] || 0)).filter((v) => !isNaN(v));
-        if (!vals.length) return;
-        vals.sort((a, b) => a - b);
-        const bins = 5;
-        const thresholds = [];
-        for (let i = 1; i < bins; i++)
-          thresholds.push(d3.quantile(vals, i / bins) || 0);
-        const ranges = [];
-        let lo = vals[0];
-        for (let i = 0; i < bins - 1; i++) {
-          ranges.push([i === 0 ? lo : thresholds[i - 1], thresholds[i]]);
-        }
-        ranges.push([thresholds[thresholds.length - 1], vals[vals.length - 1]]);
-        ranges.forEach((r, i) => {
-          const low = r[0],
-            high = r[1];
-          const cnt = ND.filter((n) => {
-            const v = +(n[metric] || 0);
-            return v >= low && v <= high;
-          }).length;
-          const div = document.createElement("div");
-          div.className = "legend-item";
-          div.innerHTML = `<div style="width:12px;height:12px;border-radius:2px;background:linear-gradient(90deg,rgba(0,0,0,0.04),rgba(0,0,0,0.08))"></div> ${metric} ${i + 1}: ${low.toFixed(6)} → ${high.toFixed(6)} <span class="legend-count">${cnt}</span>`;
-          div.style.cursor = "pointer";
-          div.addEventListener("click", () => {
-            // select nodes in this metric range
-            ST.sel.clear();
-            ND.forEach((n) => {
-              const v = +(n[metric] || 0);
-              if (v >= low && v <= high) ST.sel.add(n.id);
-            });
-            applySelVis();
-            badge();
-            if (ST.sel.size === 1) {
-              const sole = ND.find((n) => ST.sel.has(n.id));
-              if (sole) focusNode(sole);
-            } else if (ST.sel.size > 1) showMultiPanel();
-          });
-          el.appendChild(div);
-        });
-      }
-
       function renderRoleLegend() {
-        const el = document.getElementById("role-legend-container");
-        if (!el) return;
+        const el = document.getElementById("rl");
         el.innerHTML = "";
-        const roles = Object.keys(ROLE_COL || {});
-        roles.forEach((r) => {
+        Object.keys(RCOL).forEach((r) => {
           const d = document.createElement("div");
-          d.className = "legend-item";
-          d.innerHTML = `<div class="legend-dot" style="background:${roleColor(r)}"></div>${r}`;
-          d.addEventListener("click", () => selectRole(r, d));
+          d.className = "li";
+          d.innerHTML = `<div class="ld" style="background:${rc(r)}"></div>${r}`;
+          d.onclick = () => selRole(r);
           el.appendChild(d);
         });
       }
-
-      function selectRole(role, el) {
-        ST.sel.clear();
-        ND.forEach((n) => {
-          if ((n.inferred_role || "").trim() === role.trim()) ST.sel.add(n.id);
+      function renderPowerLegend() {
+        const el = document.getElementById("pl");
+        el.innerHTML = "";
+        [
+          { lbl: "Elite (80-100)", col: "#ff3d5a", min: 80 },
+          { lbl: "Senior (60-79)", col: "#ffc13d", min: 60 },
+          { lbl: "Mid (40-59)", col: "#3dff9a", min: 40 },
+          { lbl: "Junior (20-39)", col: "#00d4ff", min: 20 },
+          { lbl: "Staff (0-19)", col: "#4a5a72", min: 0 },
+        ].forEach((t) => {
+          const d = document.createElement("div");
+          d.className = "li";
+          d.innerHTML = `<div class="ld" style="background:${t.col}"></div>${t.lbl}`;
+          d.onclick = () => selPowerTier(t.min, t.min + 19);
+          el.appendChild(d);
         });
-        applySelVis();
-        badge();
-        // highlight active item
-        document
-          .querySelectorAll("#role-legend-container .legend-item")
-          .forEach((x) => x.classList.remove("active"));
-        if (el) el.classList.add("active");
-        if (ST.sel.size === 1) {
-          const sole = ND.find((n) => ST.sel.has(n.id));
-          if (sole) focusNode(sole);
-        } else if (ST.sel.size > 1) showMultiPanel();
       }
-      function selectCommunity(cid) {
+      function selComm(cid) {
         ST.sel.clear();
         ND.forEach((n) => {
           if (n.community === cid) ST.sel.add(n.id);
@@ -1645,39 +1900,61 @@
         applySelVis();
         badge();
         if (ST.sel.size === 1) {
-          const sole = ND.find((n) => ST.sel.has(n.id));
-          if (sole) focusNode(sole);
-        } else {
-          showMultiPanel();
-        }
+          const s = ND.find((n) => ST.sel.has(n.id));
+          if (s) focusNode(s);
+        } else if (ST.sel.size > 1) showMulti();
+      }
+      function selRole(role) {
+        ST.sel.clear();
+        ND.forEach((n) => {
+          if ((n.inferred_role || "").trim() === role.trim()) ST.sel.add(n.id);
+        });
+        applySelVis();
+        badge();
+        if (ST.sel.size > 1) showMulti();
+      }
+      function selPowerTier(mn, mx) {
+        ST.sel.clear();
+        ND.forEach((n) => {
+          const p =
+            (ENODE[n.id] || {}).overall_power_index ||
+            n.power_level_heuristic * 10 ||
+            0;
+          if (p >= mn && p <= mx) ST.sel.add(n.id);
+        });
+        applySelVis();
+        badge();
+        if (ST.sel.size > 1) showMulti();
       }
 
-      // ── TOP LIST ────────────────────────────────────────────────
+      /* ── TOP LIST ── */
       function renderTopList() {
-        const el = document.getElementById("top-nodes-list");
-        const titleEl = document.getElementById("topnodes-title");
-        const sizeSel = document.getElementById("sel-size");
-        const metricKey = ST?.opts?.sz || "pagerank";
-        const metricLabel =
-          sizeSel?.options?.[sizeSel.selectedIndex]?.textContent || metricKey;
-        if (titleEl) titleEl.textContent = `Top 20 by ${metricLabel}`;
+        const el = document.getElementById("tnl"),
+          sel = document.getElementById("ssz");
+        const k = ST?.opts?.sz || "pagerank";
+        const lbl = sel?.options?.[sel.selectedIndex]?.textContent || k;
+        document.getElementById("ttitle").textContent = `Top 20 by ${lbl}`;
         el.innerHTML = "";
         ND.slice()
-          .sort((a, b) => (b[metricKey] || 0) - (a[metricKey] || 0))
+          .sort((a, b) => (b[k] || 0) - (a[k] || 0))
           .slice(0, 20)
           .forEach((n, i) => {
-          const d = document.createElement("div");
-          d.className = "node-list-item";
-          d.id = "nli-" + n.id;
-          d.innerHTML = `<span class="node-rank">${i + 1}</span><span class="node-name">${n.id.split("@")[0]}</span><span class="node-badge">${(n.inferred_role || n.role || "").split(" ")[0] || "—"}</span>`;
-          d.addEventListener("click", () => focusById(n.id));
-          el.appendChild(d);
+            const dp = ENODE[n.id] || {};
+            const pi =
+              dp.overall_power_index || n.power_level_heuristic * 10 || 0;
+            const d = document.createElement("div");
+            d.className = "nli";
+            d.id = "nli-" + n.id;
+            const piC = piColor(pi);
+            d.innerHTML = `<span class="nr">${i + 1}</span><span class="nn">${n.id.split("@")[0]}</span><span class="nb">${(n.inferred_role || "").split(" ")[0] || "—"}</span><span class="pib" style="background:${piC}22;color:${piC};border:1px solid ${piC}44">${pi}</span>`;
+            d.onclick = () => focusById(n.id);
+            el.appendChild(d);
           });
       }
 
-      // ── CLOUD ────────────────────────────────────────────────────
+      /* ── CLOUD ── */
       function renderCloud(kw) {
-        const el = document.getElementById("cloud-words");
+        const el = document.getElementById("kw");
         el.innerHTML = "";
         if (!kw?.length) return;
         const mx = kw[0].count,
@@ -1685,51 +1962,112 @@
         kw.slice(0, 60).forEach(({ word, count }) => {
           const t = (count - mn) / Math.max(mx - mn, 1),
             s = document.createElement("span");
-          s.className = "cloud-word";
+          s.className = "cw2";
           s.textContent = word;
-          s.style.fontSize = 9 + t * 14 + "px";
+          s.style.fontSize = 8 + t * 14 + "px";
           s.style.opacity = 0.35 + t * 0.65;
           el.appendChild(s);
         });
       }
 
-      // ── CHARTS ──────────────────────────────────────────────────
-      const TT = {
-        backgroundColor: "#0a0e16",
-        borderColor: "#1e2a3a",
+      /* ── CHARTS ── */
+      const TTopt = {
+        backgroundColor: "#08101a",
+        borderColor: "#1a2333",
         borderWidth: 1,
-        titleColor: "#00e5ff",
-        bodyColor: "#e2e8f0",
+        titleColor: "#00d4ff",
+        bodyColor: "#dde4ef",
       };
       function renderCommChart(c) {
         c = (c || []).slice(0, 10);
-        const ctx = document.getElementById("chart-community").getContext("2d");
-        if (RC.comm) RC.comm.destroy();
-        RC.comm = new Chart(ctx, {
+        const ctx = document.getElementById("chc").getContext("2d");
+        if (RC.cm) RC.cm.destroy();
+        RC.cm = new Chart(ctx, {
           type: "doughnut",
           data: {
             labels: c.map((x) => `C${x.community_id}`),
             datasets: [
               {
                 data: c.map((x) => x.size),
-                backgroundColor: c.map((x) => commColor(x.community_id) + "bb"),
-                borderColor: c.map((x) => commColor(x.community_id)),
+                backgroundColor: c.map((x) => cc(x.community_id) + "bb"),
+                borderColor: c.map((x) => cc(x.community_id)),
                 borderWidth: 1.5,
               },
             ],
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: false }, tooltip: TT },
+            plugins: { legend: { display: false }, tooltip: TTopt },
           },
         });
       }
-      // ── TIMELINE CHART ──────────────────────────────────────────
+      function renderPowerChart() {
+        const enriched = RAW.enriched || [];
+        if (!enriched.length) return;
+        const ctx = document.getElementById("chp").getContext("2d");
+        if (RC.pw) RC.pw.destroy();
+        // Histogram: bins 0-9,10-19,...,90-100
+        const bins = new Array(10).fill(0);
+        enriched.forEach((n) => {
+          const p = (n.deep_profile || {}).overall_power_index || 0;
+          const b = Math.min(9, Math.floor(p / 10));
+          bins[b]++;
+        });
+        const lbls = [
+          "0-9",
+          "10-19",
+          "20-29",
+          "30-39",
+          "40-49",
+          "50-59",
+          "60-69",
+          "70-79",
+          "80-89",
+          "90-100",
+        ];
+        const bColors = bins.map((_, i) =>
+          i >= 8
+            ? "#ff3d5a"
+            : i >= 6
+              ? "#ffc13d"
+              : i >= 4
+                ? "#3dff9a"
+                : "#00d4ff",
+        );
+        RC.pw = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: lbls,
+            datasets: [
+              {
+                data: bins,
+                backgroundColor: bColors.map((c) => c + "99"),
+                borderColor: bColors,
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: TTopt },
+            scales: {
+              x: {
+                ticks: { color: "#4a5a72", font: { size: 7 } },
+                grid: { display: false },
+              },
+              y: {
+                ticks: { color: "#4a5a72" },
+                grid: { color: "rgba(26,35,51,.5)" },
+              },
+            },
+          },
+        });
+      }
       function renderTimelineChart(tl) {
-        if (!tl || !tl.length) return;
-        const ctx = document.getElementById("chart-timeline").getContext("2d");
-        if (RC.timeline) RC.timeline.destroy();
-        RC.timeline = new Chart(ctx, {
+        if (!tl?.length) return;
+        const ctx = document.getElementById("chtl").getContext("2d");
+        if (RC.tl) RC.tl.destroy();
+        RC.tl = new Chart(ctx, {
           type: "line",
           data: {
             labels: tl.map((x) => x.period),
@@ -1737,8 +2075,8 @@
               {
                 label: "Emails",
                 data: tl.map((x) => x.email_count),
-                borderColor: "rgba(0,229,255,.8)",
-                backgroundColor: "rgba(0,229,255,.12)",
+                borderColor: "rgba(0,212,255,.8)",
+                backgroundColor: "rgba(0,212,255,.1)",
                 fill: true,
                 tension: 0.3,
                 pointRadius: 2,
@@ -1748,81 +2086,102 @@
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: false }, tooltip: TT },
+            plugins: { legend: { display: false }, tooltip: TTopt },
             scales: {
               x: {
-                ticks: { color: "#64748b", font: { size: 8 }, maxRotation: 45 },
+                ticks: { color: "#4a5a72", font: { size: 7 }, maxRotation: 45 },
                 grid: { display: false },
               },
               y: {
-                ticks: { color: "#64748b" },
-                grid: { color: "rgba(30,42,58,.5)" },
+                ticks: { color: "#4a5a72" },
+                grid: { color: "rgba(26,35,51,.5)" },
               },
             },
           },
         });
       }
-
-      // ── DEGREE DISTRIBUTION CHART ─────────────────────────────────
       function renderDegDistChart(dd) {
-        if (!dd || !dd.length) return;
-        const ctx = document.getElementById("chart-degdist").getContext("2d");
-        if (RC.degdist) RC.degdist.destroy();
-        RC.degdist = new Chart(ctx, {
+        if (!dd?.length) return;
+        const ctx = document.getElementById("chdd").getContext("2d");
+        if (RC.dd) RC.dd.destroy();
+        RC.dd = new Chart(ctx, {
           type: "scatter",
           data: {
             datasets: [
               {
-                label: "Degree dist",
                 data: dd
                   .filter((x) => x.degree > 0 && x.count > 0)
                   .map((x) => ({
                     x: Math.log10(x.degree),
                     y: Math.log10(x.count),
                   })),
-                backgroundColor: "rgba(168,85,247,.6)",
+                backgroundColor: "rgba(185,125,255,.6)",
                 pointRadius: 2.5,
               },
             ],
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: false }, tooltip: TT },
+            plugins: { legend: { display: false }, tooltip: TTopt },
             scales: {
               x: {
                 title: {
                   display: true,
                   text: "log₁₀(degree)",
-                  color: "#64748b",
-                  font: { size: 9 },
+                  color: "#4a5a72",
+                  font: { size: 8 },
                 },
-                ticks: { color: "#64748b" },
-                grid: { color: "rgba(30,42,58,.5)" },
+                ticks: { color: "#4a5a72" },
+                grid: { color: "rgba(26,35,51,.5)" },
               },
               y: {
                 title: {
                   display: true,
                   text: "log₁₀(count)",
-                  color: "#64748b",
-                  font: { size: 9 },
+                  color: "#4a5a72",
+                  font: { size: 8 },
                 },
-                ticks: { color: "#64748b" },
-                grid: { color: "rgba(30,42,58,.5)" },
+                ticks: { color: "#4a5a72" },
+                grid: { color: "rgba(26,35,51,.5)" },
               },
             },
           },
         });
       }
-
-      // ── COMMUNITY STATS TABLE ─────────────────────────────────────
+      function renderPowerTierBreakdown() {
+        const el = document.getElementById("ptb");
+        if (!el) return;
+        const enriched = RAW.enriched || [];
+        if (!enriched.length) return;
+        const tiers = [
+          { lbl: "Elite 80-100", col: "#ff3d5a", min: 80, max: 100 },
+          { lbl: "Senior 60-79", col: "#ffc13d", min: 60, max: 79 },
+          { lbl: "Mid 40-59", col: "#3dff9a", min: 40, max: 59 },
+          { lbl: "Junior 20-39", col: "#00d4ff", min: 20, max: 39 },
+          { lbl: "Staff 0-19", col: "#4a5a72", min: 0, max: 19 },
+        ];
+        const tot = enriched.length;
+        el.innerHTML = "";
+        const div = document.createElement("div");
+        div.className = "pwr-dist";
+        tiers.forEach((t) => {
+          const cnt = enriched.filter((n) => {
+            const p = (n.deep_profile || {}).overall_power_index || 0;
+            return p >= t.min && p <= t.max;
+          }).length;
+          const pct = ((cnt / tot) * 100).toFixed(1);
+          div.innerHTML += `<div class="pwr-tier"><span class="pwr-tier-lbl" style="color:${t.col}">${t.lbl}</span><div class="pwr-tier-bar"><div class="pwr-tier-fill" style="width:${pct}%;background:${t.col}88"></div></div><span class="pwr-tier-cnt" style="color:${t.col}">${cnt}</span></div>`;
+        });
+        el.appendChild(div);
+      }
       function renderCommStats(comms) {
-        const el = document.getElementById("comm-stats-container");
-        if (!el || !comms || !comms.length) return;
+        const el = document.getElementById("cst");
+        if (!el || !comms?.length) return;
         const rows = (comms || [])
           .slice(0, 12)
           .map(
             (c) =>
-              `<tr><td style="color:${commColor(c.community_id)}">${c.community_id}</td><td>${c.size}</td><td>${(
+              `<tr><td style="color:${cc(c.community_id)}">${c.community_id}</td><td>${c.size}</td><td>${(
                 c.top_members || []
               )
                 .slice(0, 3)
@@ -1830,43 +2189,22 @@
                 .join(", ")}</td></tr>`,
           )
           .join("");
-        el.innerHTML = `<table class="comm-stats-table"><thead><tr><th>ID</th><th>Size</th><th>Top Members</th></tr></thead><tbody>${rows}</tbody></table>`;
+        el.innerHTML = `<table class="ctbl"><thead><tr><th>ID</th><th>Size</th><th>Top Members</th></tr></thead><tbody>${rows}</tbody></table>`;
       }
 
-      // ── EDGE ID HELPER ────────────────────────────────────────────
-      function eid(e) {
-        return { s: e.source?.id ?? e.source, t: e.target?.id ?? e.target };
-      }
-
-      // ── JSON EXPORT ───────────────────────────────────────────────
-      function exportJSON() {
-        const data = { nodes: ND, edges: ED };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-          type: "application/json",
-        });
-        const a = document.createElement("a");
-        a.download = "enron-sna-export.json";
-        a.href = URL.createObjectURL(blob);
-        a.click();
-        URL.revokeObjectURL(a.href);
-      }
-
-      // ── SPHERE NETWORK ───────────────────────────────────────────
+      /* ── BUILD NETWORK ── */
       function buildNetwork(gd, opts) {
-        const { maxN, minW, sz, col } = opts;
-        const svg = d3.select("#network-svg");
+        const { maxN, minW, sz, dist } = opts;
+        const svg = d3.select("#nsv");
         const W = svg.node().clientWidth,
           H = svg.node().clientHeight;
-
-        if (sim) {
-          sim.stop();
-          sim = null;
+        if (_raf) {
+          cancelAnimationFrame(_raf);
+          _raf = null;
         }
         stopAutoSpin();
-
         svg.selectAll("g").remove();
-        // Zoom only adjusts sphere scale (scroll wheel)
-        ZM = d3
+        const ZM = d3
           .zoom()
           .scaleExtent([0.3, 4])
           .filter((ev) => ev.type === "wheel" || ev.type === "dblclick")
@@ -1875,31 +2213,26 @@
             drawSphere();
           });
         svg.call(ZM);
-
         svg.select("#bg-hit").remove();
         svg
-          .insert("rect", "#lasso-box")
+          .insert("rect", "#lbox")
           .attr("id", "bg-hit")
           .attr("width", W)
           .attr("height", H)
           .attr("fill", "transparent")
           .on("click", (ev) => {
             if (ST.mode === "select") {
-              // Ignore background clicks caused by dragging/rotating the sphere
               if (ST._dragging) {
-                // clear dragging flag shortly after click to restore normal clicks
                 ST._dragging = false;
                 return;
               }
               clearSel();
             }
           });
+        const gMain = svg.append("g"),
+          gEdges = gMain.append("g"),
+          gNodes = gMain.append("g");
 
-        gMain = svg.append("g");
-        gEdges = gMain.append("g");
-        gNodes = gMain.append("g");
-
-        // Filter nodes/edges (same normalization as before to prevent D3 mutation bugs)
         let nodes = [...(gd.nodes || [])]
           .sort((a, b) => b[sz] - a[sz])
           .slice(0, maxN);
@@ -1928,10 +2261,18 @@
           Ls = null;
           return;
         }
+
+        // Merge power index from enriched data into each node
+        nodes.forEach((n) => {
+          const dp = ENODE[n.id] || {};
+          n.power_index =
+            dp.overall_power_index || n.power_level_heuristic * 10 || 0;
+        });
+
         ND = nodes;
         ED = edges;
 
-        // ── Assign community-aware sphere positions (Fibonacci inside band) ──
+        // Sphere layout
         const communities = [
           ...new Set(nodes.map((n) => n.community ?? -1)),
         ].sort((a, b) => a - b);
@@ -1950,7 +2291,6 @@
           const li = commOff.get(c) || 0;
           commOff.set(c, li + 1);
           const localN = commCounts.get(c) || 1;
-          // Each community occupies a latitude band on the sphere
           const latMin = (ci / nComm) * Math.PI * 0.92 + 0.08 * Math.PI;
           const latMax = ((ci + 1) / nComm) * Math.PI * 0.92 + 0.08 * Math.PI;
           const t = localN > 1 ? (li + 0.5) / localN : 0.5;
@@ -1965,7 +2305,6 @@
           n._ps = 1;
         });
 
-        // Build edge-with-noderef objects for drawing
         const nodeMap = new Map(nodes.map((n) => [n.id, n]));
         const edgeObjs = edges
           .map((e) => ({
@@ -1974,7 +2313,6 @@
             _tgt: nodeMap.get(e.target),
           }))
           .filter((e) => e._src && e._tgt);
-        ED = edges; // keep for controls
 
         // Scales
         const sv = nodes.map((n) => n[sz] || 0);
@@ -1987,14 +2325,8 @@
           wMin = Math.max(d3.min(wv) || 0.01, 0.01),
           wMax = d3.max(wv) || 1;
         _stSc = d3.scaleLog().domain([wMin, wMax]).range([0.35, 3]).clamp(true);
-        _getColorFn = (n) => {
-          if (col === "community") return commColor(n.community);
-          if (col === "inferred_role") return roleColor(n.inferred_role);
-          const mx = d3.max(nodes.map((x) => x[col] || 0)) || 1;
-          return d3.interpolatePlasma((n[col] || 0) / mx);
-        };
+        _getColorFn = makeColorFn(nodes);
 
-        // SVG edges
         Es = gEdges
           .selectAll("line.e-base")
           .data(edgeObjs)
@@ -2004,39 +2336,33 @@
             ST.edgeByW ? _stSc(d.weight || 1) : 0.6,
           );
 
-        // SVG nodes
         const ng = gNodes
-          .selectAll("g.n-group")
+          .selectAll("g.ng")
           .data(nodes, (d) => d.id)
           .join("g")
           .attr(
             "class",
             (d) =>
-              "n-group" +
+              "ng" +
               (ST.sel.has(d.id) ? " selected" : "") +
               (ST.pinned.has(d.id) ? " pinned" : ""),
           )
           .on("click", (ev, d) => {
             ev.stopPropagation();
             if (ST.mode !== "select") return;
-            // Shortest-path quick mode (Alt+click or Path tool active)
             if (
               ev.altKey ||
-              document.getElementById("tb-path").classList.contains("active")
+              document.getElementById("tb-pth").classList.contains("active")
             ) {
               if (!PATH_START) {
                 PATH_START = d.id;
-                // Show "from" start feedback in badge
-                const sb = document.getElementById("sel-badge");
-                sb.style.maxWidth = "";
-                sb.style.whiteSpace = "";
-                sb.style.lineHeight = "";
-                sb.innerHTML = `<span style="color:var(--amber)">⇄ Path from:</span> <span style="color:var(--accent);font-weight:700">${d.id.split("@")[0]}</span> <span style="color:var(--muted);font-size:9px">— now click the target node</span>`;
-                sb.style.display = "block";
+                showPathBadge(
+                  `<span style="color:var(--c4)">⇄ Path from:</span> <b style="color:var(--c1)">${d.id.split("@")[0]}</b> <span style="color:var(--muted2);font-size:8px">— click target node</span>`,
+                );
               } else {
                 showPathBetween(PATH_START, d.id);
                 PATH_START = null;
-                document.getElementById("tb-path").classList.remove("active");
+                document.getElementById("tb-pth").classList.remove("active");
               }
               return;
             }
@@ -2045,14 +2371,12 @@
               applySelVis();
               badge();
               if (ST.sel.size === 1) {
-                const sole = ND.find((n) => ST.sel.has(n.id));
-                if (sole) focusNode(sole);
+                const s = ND.find((n) => ST.sel.has(n.id));
+                if (s) focusNode(s);
               } else if (ST.sel.size === 0) {
-                document.getElementById("node-detail").style.display = "none";
-                document.getElementById("multi-detail").style.display = "none";
-              } else {
-                showMultiPanel();
-              }
+                document.getElementById("nd").style.display = "none";
+                document.getElementById("md").style.display = "none";
+              } else showMulti();
               if (ST.isolate) rebuild();
             } else {
               ST.sel.clear();
@@ -2066,20 +2390,16 @@
           .on("dblclick", (ev, d) => {
             ev.stopPropagation();
             if (ST.mode !== "select") return;
-            const nowPinned = ST.pinned.has(d.id);
-            if (nowPinned) ST.pinned.delete(d.id);
-            else ST.pinned.add(d.id);
+            ST.pinned.has(d.id) ? ST.pinned.delete(d.id) : ST.pinned.add(d.id);
             applyPinVis();
-            // Ego view on pin: highlight local 1-degree neighborhood
             if (ST.pinned.has(d.id)) showEgo(d.id);
-            else if (ST.pinned.size === 0) {
-              // restore default visuals
-              clearPathHighlight();
-              refreshVisuals();
+            else {
+              clearPathHL();
+              refreshVis();
             }
           })
           .on("mouseover", (ev, d) => {
-            if (ST.mode !== "lasso") showTooltip(ev, d);
+            if (ST.mode !== "lasso") showTT(ev, d);
           })
           .on("mousemove", (ev) => moveTT(ev))
           .on("mouseout", () => hideTT());
@@ -2087,61 +2407,60 @@
         ng.append("circle")
           .attr("r", (d) => _szSc(d[sz] || 0))
           .attr("fill", (d) => _getColorFn(d))
-          .attr("stroke", "rgba(255,255,255,.12)")
-          .attr("stroke-width", 0.8)
-          .attr("filter", (d) => ((d[sz] || 0) > q85 ? "url(#glow-f)" : null));
+          .attr("stroke", "rgba(255,255,255,.1)")
+          .attr("stroke-width", 0.7)
+          .attr("filter", (d) => ((d[sz] || 0) > q85 ? "url(#gf)" : null));
         Ls = ng
           .append("text")
-          .attr("class", (d) => lblClass(d))
-          .attr("dy", (d) => _szSc(d[sz] || 0) + 9)
+          .attr("class", (d) => lblCls(d))
+          .attr("dy", (d) => _szSc(d[sz] || 0) + 8)
           .text((d) => d.label || d.id.split("@")[0]);
 
-        // Centre and radius
         _sphCx = W / 2;
         _sphCy = H / 2;
         _sphR = (Math.min(W, H) * opts.dist) / 100;
-
-        // Setup arcball drag (background + node drag both rotate sphere)
         setupSphereDrag(svg);
-
         drawSphere();
         applyMode();
         renderTopList();
       }
 
-      // ── SPHERE DRAG ──────────────────────────────────────────────
+      /* ── COLOR FUNCTION BY MODE ── */
+      function makeColorFn(nodes) {
+        if (ST.colorMode === "community") return (n) => cc(n.community);
+        if (ST.colorMode === "role") return (n) => rc(n.inferred_role);
+        if (ST.colorMode === "power") return (n) => piColor(n.power_index || 0);
+        const mx = d3.max(nodes.map((x) => x[ST.opts.col] || 0)) || 1;
+        return (n) => d3.interpolatePlasma((n[ST.opts.col] || 0) / mx);
+      }
+
+      /* ── SPHERE DRAG ── */
       function setupSphereDrag(svg) {
         svg.on("mousedown.sph", function (ev) {
           if (ST.mode === "lasso") return;
-          const tgt = ev.target;
-          // Allow drag from background, nodes, or edges
-          if (tgt.tagName === "INPUT" || tgt.tagName === "BUTTON") return;
+          if (ev.target.tagName === "INPUT" || ev.target.tagName === "BUTTON")
+            return;
           _dragX0 = ev.clientX;
           _dragY0 = ev.clientY;
           stopAutoSpin();
           ST._dragging = false;
-          let _moved = 0;
-          // Install move/up on window so drag works outside SVG bounds
+          let _mv = 0;
           const onMove = (e) => {
             const dx = e.clientX - _dragX0,
               dy = e.clientY - _dragY0;
             _dragX0 = e.clientX;
             _dragY0 = e.clientY;
-            _moved += Math.hypot(dx, dy);
-            if (_moved > 3) ST._dragging = true;
-            const angle = Math.hypot(dx, dy) * 0.006;
-            if (angle < 0.0001) return;
-            const ax = normalize3([dy, -dx, 0]);
-            SPHERE_ROT = matMul(
-              rotAxisAngle(ax[0], ax[1], ax[2], angle),
-              SPHERE_ROT,
-            );
+            _mv += Math.hypot(dx, dy);
+            if (_mv > 3) ST._dragging = true;
+            const ang = Math.hypot(dx, dy) * 0.006;
+            if (ang < 0.0001) return;
+            const ax = n3([dy, -dx, 0]);
+            SPHERE_ROT = matMul(rotAA(ax[0], ax[1], ax[2], ang), SPHERE_ROT);
             drawSphere();
           };
           const onUp = () => {
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
-            // keep dragging flag true briefly so subsequent click handlers can detect it
             setTimeout(() => (ST._dragging = false), 150);
           };
           window.addEventListener("mousemove", onMove);
@@ -2150,7 +2469,7 @@
         });
       }
 
-      // ── AUTO SPIN ────────────────────────────────────────────────
+      /* ── SPIN ── */
       function startAutoSpin() {
         _autoSpin = true;
         isRunning = true;
@@ -2159,7 +2478,7 @@
             _raf = null;
             return;
           }
-          SPHERE_ROT = matMul(rotAxisAngle(0, 1, 0, _spinSpeed), SPHERE_ROT);
+          SPHERE_ROT = matMul(rotAA(0, 1, 0, _spinSpeed), SPHERE_ROT);
           drawSphere();
           _raf = requestAnimationFrame(frame);
         }
@@ -2174,25 +2493,23 @@
         }
       }
 
-      // ── DRAW SPHERE ──────────────────────────────────────────────
+      /* ── DRAW SPHERE ── */
       function drawSphere() {
         if (!ND.length || !Ns) return;
-        // Project all nodes
+        const sz = ST.opts.sz;
         ND.forEach((n) => {
           const [rx, ry, rz] = matVec(SPHERE_ROT, [
             n._sx * _sphR,
             n._sy * _sphR,
             n._sz * _sphR,
           ]);
-          const fov = _sphR * 2.2;
-          const ps = fov / (fov + rz);
+          const fov = _sphR * 2.2,
+            ps = fov / (fov + rz);
           n._px = _sphCx + rx * ps;
           n._py = _sphCy + ry * ps;
           n._pz = rz;
           n._ps = ps;
         });
-        const sz = ST.opts.sz;
-        // Sort nodes back-to-front for painter's algorithm
         Ns.sort((a, b) => a._pz - b._pz)
           .attr("transform", (d) => `translate(${d._px},${d._py})`)
           .attr("pointer-events", (d) =>
@@ -2203,41 +2520,32 @@
             Math.max(1.5, _szSc(d[sz] || 0) * (0.55 + 0.45 * d._ps)),
           )
           .style("opacity", (d) => {
-            // Path highlight takes priority
-            if (PATH_HL.nodes.size > 0) {
-              return PATH_HL.nodes.has(d.id) ? 1 : 0.1;
-            }
-            // Selection highlight (non-isolate mode)
-            if (ST.sel.size > 0 && !ST.isolate) {
-              return ST.sel.has(d.id) ? 1 : 0.15;
-            }
-            // Default depth-based opacity
+            if (PATH_HL.nodes.size > 0)
+              return PATH_HL.nodes.has(d.id) ? 1 : 0.08;
+            if (ST.sel.size > 0 && !ST.isolate)
+              return ST.sel.has(d.id) ? 1 : 0.12;
             return Math.max(0.07, 0.25 + 0.75 * ((d._pz / _sphR + 1) / 2));
           });
-        if (Ls) {
+        if (Ls)
           Ls.style("opacity", (d) => {
             if (PATH_HL.nodes.size > 0) return PATH_HL.nodes.has(d.id) ? 1 : 0;
             if (ST.sel.size > 0 && !ST.isolate) return ST.sel.has(d.id) ? 1 : 0;
             return d._pz > 0 ? 1 : 0;
           });
-        }
-        // Edges
         if (Es)
           Es.attr("x1", (d) => d._src._px)
             .attr("y1", (d) => d._src._py)
             .attr("x2", (d) => d._tgt._px)
             .attr("y2", (d) => d._tgt._py)
             .style("opacity", (d) => {
-              // Path highlight takes priority
               if (PATH_HL.edges.size > 0) {
-                const s = d.source?.id ?? d.source;
-                const t = d.target?.id ?? d.target;
+                const s = d.source?.id ?? d.source,
+                  t = d.target?.id ?? d.target;
                 return PATH_HL.edges.has(s + "|" + t) ? 0.95 : 0.03;
               }
-              // Selection mode: highlight edges touching selected nodes
               if (ST.sel.size > 0 && !ST.isolate) {
-                const s = d.source?.id ?? d.source;
-                const t = d.target?.id ?? d.target;
+                const s = d.source?.id ?? d.source,
+                  t = d.target?.id ?? d.target;
                 if (ST.sel.has(s) || ST.sel.has(t)) return 0.85;
                 return 0.04;
               }
@@ -2246,86 +2554,22 @@
             });
       }
 
-      // ── UI / LAYOUT / EXTRA TOOLS ─────────────────────────────────
+      /* ── PATH ── */
       let PATH_START = null;
       let PATH_HL = { nodes: new Set(), edges: new Set() };
-      let PATH_FROM_ID = null;
-      let PATH_TO_ID = null;
-
-      function toggleTheme() {
-        const el = document.documentElement;
-        el.classList.toggle("light-theme");
-        try {
-          localStorage.setItem(
-            "enron_theme",
-            el.classList.contains("light-theme") ? "light" : "dark",
-          );
-        } catch (e) {}
+      let PATH_FROM_ID = null,
+        PATH_TO_ID = null;
+      function showPathBadge(html) {
+        const el = document.getElementById("spath");
+        el.innerHTML = html;
+        el.style.display = "block";
       }
-
-      function restoreTheme() {
-        try {
-          const v = localStorage.getItem("enron_theme");
-          if (v === "light")
-            document.documentElement.classList.add("light-theme");
-        } catch (e) {}
-      }
-
-      function toggleSidebar(side) {
-        const app = document.getElementById("app");
-        const el = document.getElementById(
-          side === "left" ? "sidebar-left" : "sidebar-right",
-        );
-        const btn = document.getElementById(
-          side === "left" ? "btn-collapse-left" : "btn-collapse-right",
-        );
-        el.classList.toggle("collapsed");
-        const isNowCollapsed = el.classList.contains("collapsed");
-
-        if (side === "left") {
-          btn.textContent = isNowCollapsed ? ">" : "<";
-        } else {
-          btn.textContent = isNowCollapsed ? "<" : ">";
-        }
-
-        const left = document
-          .getElementById("sidebar-left")
-          .classList.contains("collapsed");
-        const right = document
-          .getElementById("sidebar-right")
-          .classList.contains("collapsed");
-
-        app.classList.toggle("left-collapsed", left && !right);
-        app.classList.toggle("right-collapsed", right && !left);
-        app.classList.toggle("both-collapsed", left && right);
-
-        // Trigger resize logic after transition
-        setTimeout(() => handleResize(), 310);
-      }
-
-      function handleResize() {
-        const svg = d3.select("#network-svg");
-        if (!svg.node()) return;
-        const W = svg.node().clientWidth,
-          H = svg.node().clientHeight;
-        _sphCx = W / 2;
-        _sphCy = H / 2;
-        _sphR = (Math.min(W, H) * ST.opts.dist) / 100;
-
-        // Update background hit rect
-        svg.select("#bg-hit").attr("width", W).attr("height", H);
-
-        drawSphere();
-      }
-
-      window.addEventListener("resize", () => db(handleResize, 100, "resize"));
-
       function buildAdj() {
         const adj = new Map();
         ND.forEach((n) => adj.set(n.id, new Set()));
         (ED || []).forEach((e) => {
-          const s = e.source?.id ?? e.source;
-          const t = e.target?.id ?? e.target;
+          const s = e.source?.id ?? e.source,
+            t = e.target?.id ?? e.target;
           if (adj.has(s) && adj.has(t)) {
             adj.get(s).add(t);
             adj.get(t).add(s);
@@ -2333,55 +2577,20 @@
         });
         return adj;
       }
-
-      function updateLeftLegend() {
-        const col = ST.opts.col;
-        const commEl = document.getElementById("community-panel");
-        const roleEl = document.getElementById("role-panel");
-        const topEl = document.getElementById("topnodes-panel");
-        const metrEl = document.getElementById("metric-panel");
-        if (!commEl || !roleEl || !topEl) return;
-        // hide all first
-        commEl.style.display = "none";
-        roleEl.style.display = "none";
-        topEl.style.display = "block";
-        if (metrEl) metrEl.style.display = "none";
-        if (col === "community") {
-          commEl.style.display = "block";
-        } else if (col === "inferred_role") {
-          roleEl.style.display = "block";
-        } else if (
-          col === "betweenness" ||
-          col === "pagerank" ||
-          col === "weighted_degree" ||
-          col === "degree_centrality"
-        ) {
-          // show metric legend for continuous metrics
-          if (metrEl) {
-            metrEl.style.display = "block";
-            renderMetricLegend(col);
-          }
-        } else {
-          // fallback: show community legend
-          commEl.style.display = "block";
-        }
-      }
-
       function shortestPath(a, b) {
         const adj = buildAdj();
         if (!adj.has(a) || !adj.has(b)) return null;
-        const q = [a];
-        const prev = new Map();
+        const q = [a],
+          prev = new Map();
         prev.set(a, null);
         while (q.length) {
           const u = q.shift();
           if (u === b) break;
-          for (const v of adj.get(u) || []) {
+          for (const v of adj.get(u) || [])
             if (!prev.has(v)) {
               prev.set(v, u);
               q.push(v);
             }
-          }
         }
         if (!prev.has(b)) return null;
         const path = [];
@@ -2393,83 +2602,57 @@
         path.reverse();
         return path;
       }
-
       function showPathBetween(a, b) {
-        clearPathHighlight();
+        clearPathHL();
         if (a === b) return;
         const p = shortestPath(a, b);
         if (!p) {
-          const badge = document.getElementById("sel-badge");
-          badge.innerHTML = `<span style="color:var(--accent2)">✕ No path found:</span> <span style="color:var(--muted);font-size:9px">${a.split("@")[0]} → ${b.split("@")[0]}</span>`;
-          badge.style.display = "block";
-          badge.style.maxWidth = "60vw";
-          badge.style.whiteSpace = "normal";
-          setTimeout(() => {
-            badge.style.display = "none";
-          }, 4000);
+          showPathBadge(
+            `<span style="color:var(--c2)">✕ No path found:</span> <span style="color:var(--muted2);font-size:8px">${a.split("@")[0]} → ${b.split("@")[0]}</span>`,
+          );
+          setTimeout(
+            () => (document.getElementById("spath").style.display = "none"),
+            4000,
+          );
           return;
         }
-        const setN = new Set(p);
-        PATH_HL.nodes = setN;
-
-        // Build set of edge keys that belong to the path (both directions)
-        const pathEdgeKeys = new Set();
+        PATH_HL.nodes = new Set(p);
+        const pek = new Set();
         for (let i = 0; i < p.length - 1; i++) {
-          pathEdgeKeys.add(p[i] + "|" + p[i + 1]);
-          pathEdgeKeys.add(p[i + 1] + "|" + p[i]);
+          pek.add(p[i] + "|" + p[i + 1]);
+          pek.add(p[i + 1] + "|" + p[i]);
         }
-        PATH_HL.edges = pathEdgeKeys;
-
-        // Mark path nodes as selected visually
-        Ns.classed("selected", (d) => setN.has(d.id));
-        // Mark path edges
-        const isPathEdge = (e) => {
-          const s = e.source?.id ?? e.source;
-          const t = e.target?.id ?? e.target;
-          return pathEdgeKeys.has(s + "|" + t);
-        };
-        Es.classed("hi", (e) => isPathEdge(e)).classed(
-          "dim",
-          (e) => !isPathEdge(e),
-        );
-
-        // Build readable hop-by-hop path label with arrows
-        const pathNames = p.map((id) => id.split("@")[0]);
-        const fromName = pathNames[0];
-        const toName = pathNames[pathNames.length - 1];
+        PATH_HL.edges = pek;
+        if (Ns) Ns.classed("selected", (d) => PATH_HL.nodes.has(d.id));
+        if (Es)
+          Es.classed("hi", (e) => {
+            const s = e.source?.id ?? e.source,
+              t = e.target?.id ?? e.target;
+            return pek.has(s + "|" + t);
+          }).classed("dim", (e) => {
+            const s = e.source?.id ?? e.source,
+              t = e.target?.id ?? e.target;
+            return !pek.has(s + "|" + t);
+          });
+        const pn = p.map((id) => id.split("@")[0]);
         const hops = p.length - 1;
-        const badge = document.getElementById("sel-badge");
-        badge.innerHTML =
-          `<div style="margin-bottom:4px">` +
-          `<span style="color:var(--accent);font-weight:700">${fromName}</span>` +
-          ` <span style="color:var(--muted)">→</span> ` +
-          `<span style="color:var(--accent2);font-weight:700">${toName}</span>` +
-          ` <span style="color:var(--muted);font-size:8px">(${hops} hop${hops !== 1 ? "s" : ""})</span>` +
-          `</div>` +
-          `<div style="color:var(--text);font-size:9px;line-height:1.6;opacity:0.85">${pathNames.join(' <span style="color:var(--accent3)">→</span> ')}</div>` +
-          `<div style="margin-top:5px"><span id="btn-clear-path" style="text-decoration:underline;cursor:pointer;color:var(--muted);font-size:8px">[clear path]</span></div>`;
-        badge.style.display = "block";
-        badge.style.maxWidth = "70vw";
-        badge.style.whiteSpace = "normal";
-        badge.style.lineHeight = "1.5";
-        const clearBtn = document.getElementById("btn-clear-path");
-        if (clearBtn)
-          clearBtn.onclick = (e) => {
+        showPathBadge(
+          `<div style="margin-bottom:4px"><span style="color:var(--c1);font-weight:700">${pn[0]}</span> <span style="color:var(--muted2)">→</span> <span style="color:var(--c2);font-weight:700">${pn[pn.length - 1]}</span> <span style="color:var(--muted2);font-size:8px">(${hops} hop${hops !== 1 ? "s" : ""})</span></div><div style="color:var(--text);font-size:8px;line-height:1.6">${pn.join(' <span style="color:var(--c3)">→</span> ')}</div><div style="margin-top:4px"><span id="bcp" style="text-decoration:underline;cursor:pointer;color:var(--muted2);font-size:8px">[clear]</span></div>`,
+        );
+        const b2 = document.getElementById("bcp");
+        if (b2)
+          b2.onclick = (e) => {
             e.stopPropagation();
-            clearPathHighlight();
-            badge.style.display = "none";
+            clearPathHL();
+            document.getElementById("spath").style.display = "none";
           };
-
-        // Trigger drawSphere to apply new opacity state
         drawSphere();
       }
-
-      function clearPathHighlight() {
+      function clearPathHL() {
         PATH_HL.nodes = new Set();
         PATH_HL.edges = new Set();
         if (Ns) {
           Ns.classed("selected", (d) => ST.sel.has(d.id));
-          // Remove inline opacity -- drawSphere will re-compute
           Ns.select("circle").style("opacity", null);
         }
         if (Es) {
@@ -2478,13 +2661,12 @@
         }
         drawSphere();
       }
-
       function showEgo(nodeId) {
-        const adj = buildAdj();
-        const neigh = adj.get(nodeId) || new Set();
+        const adj = buildAdj(),
+          neigh = adj.get(nodeId) || new Set();
         if (Ns)
           Ns.select("circle").style("opacity", (d) =>
-            d.id === nodeId || neigh.has(d.id) ? 1 : 0.08,
+            d.id === nodeId || neigh.has(d.id) ? 1 : 0.07,
           );
         if (Es)
           Es.style("opacity", (e) => {
@@ -2493,55 +2675,48 @@
             return s === nodeId ||
               t === nodeId ||
               (neigh.has(s) && neigh.has(t))
-              ? 1
-              : 0.06;
+              ? 0.9
+              : 0.04;
           });
       }
 
-      // ── REFRESH VISUALS (size/colour only – redraws sphere) ──────
-      function refreshVisuals() {
+      /* ── REFRESH VISUALS ── */
+      function refreshVis() {
         if (!Ns || !ND.length) {
           rebuild();
           return;
         }
-        const sz = ST.opts.sz,
-          col = ST.opts.col;
+        const sz = ST.opts.sz;
         const sv = ND.map((n) => n[sz] || 0);
         _szSc = d3
           .scaleSqrt()
           .domain([0, d3.max(sv) || 1])
           .range([3, 20]);
         q85 = d3.quantile(sv.slice().sort(d3.ascending), 0.85) || 0;
-        _getColorFn = (n) => {
-          if (col === "community") return commColor(n.community);
-          if (col === "inferred_role") return roleColor(n.inferred_role);
-          const mx = d3.max(ND.map((x) => x[col] || 0)) || 1;
-          return d3.interpolatePlasma((n[col] || 0) / mx);
-        };
+        _getColorFn = makeColorFn(ND);
         Ns.select("circle")
           .attr("fill", (d) => _getColorFn(d))
-          .attr("filter", (d) => ((d[sz] || 0) > q85 ? "url(#glow-f)" : null));
+          .attr("filter", (d) => ((d[sz] || 0) > q85 ? "url(#gf)" : null));
         if (Ls)
-          Ls.attr("dy", (d) => _szSc(d[sz] || 0) + 9).attr("class", (d) =>
-            lblClass(d),
+          Ls.attr("dy", (d) => _szSc(d[sz] || 0) + 8).attr("class", (d) =>
+            lblCls(d),
           );
         drawSphere();
       }
 
-      // ── MODE ────────────────────────────────────────────────────
+      /* ── MODE ── */
       function applyMode() {
-        const svg = d3.select("#network-svg");
-        svg.call(ZM);
+        const svg = d3.select("#nsv");
         svg.style("cursor", ST.mode === "lasso" ? "crosshair" : "grab");
         document
-          .getElementById("tb-select")
+          .getElementById("tb-sel")
           .classList.toggle("active", ST.mode === "select");
         document
-          .getElementById("tb-lasso")
+          .getElementById("tb-las")
           .classList.toggle("active", ST.mode === "lasso");
         document
-          .getElementById("tb-lasso")
-          .classList.toggle("lasso-active", ST.mode === "lasso");
+          .getElementById("tb-las")
+          .classList.toggle("lasso-on", ST.mode === "lasso");
         document
           .getElementById("tb-pan")
           .classList.toggle("active", ST.mode === "pan");
@@ -2551,22 +2726,20 @@
             .on("mousedown.lasso", null)
             .on("mousemove.lasso", null)
             .on("mouseup.lasso", null);
-          d3.select("#lasso-box").attr("display", "none");
+          d3.select("#lbox").attr("display", "none");
         }
-        // Sphere drag is always active on background (set up in buildNetwork)
       }
 
-      // ── LASSO ───────────────────────────────────────────────────
+      /* ── LASSO ── */
       function setupLasso(svg) {
-        // Disable zoom panning so it doesn't compete with lasso drawing
         svg.on("mousedown.zoom", null);
-        const lb = d3.select("#lasso-box");
+        const lb = d3.select("#lbox");
         let x0,
           y0,
           active = false;
         svg.on("mousedown.lasso", function (ev) {
           const tgt = ev.target;
-          if (tgt.closest && tgt.closest(".n-group")) return; // don't start on nodes
+          if (tgt.closest && tgt.closest(".ng")) return;
           [x0, y0] = d3.pointer(ev, this);
           lb.attr("x", x0)
             .attr("y", y0)
@@ -2594,12 +2767,8 @@
             ry = Math.min(my, y0),
             rw = Math.abs(mx - x0),
             rh = Math.abs(my - y0);
-          if (rw < 5 && rh < 5) {
-            svg.on("mousedown.zoom", null);
-            return;
-          }
+          if (rw < 5 && rh < 5) return;
           if (!ev.shiftKey) ST.sel.clear();
-          // Use sphere-projected screen coordinates (_px,_py) for hit test
           ND.forEach((d) => {
             if (
               (d._px || 0) >= rx &&
@@ -2612,23 +2781,21 @@
           applySelVis();
           badge();
           if (ST.sel.size === 1) {
-            const sole = ND.find((n) => ST.sel.has(n.id));
-            if (sole) focusNode(sole);
-          } else showMultiPanel();
-          // Keep zoom-pan disabled until user leaves lasso mode
-          svg.call(ZM);
-          svg.on("mousedown.zoom", null);
+            const s = ND.find((n) => ST.sel.has(n.id));
+            if (s) focusNode(s);
+          } else showMulti();
         });
       }
 
-      // ── SELECTION ───────────────────────────────────────────────
+      /* ── SELECTION ── */
       function applySelVis() {
         if (!Ns) return;
         Ns.classed("selected", (d) => ST.sel.has(d.id));
-        // Always clear inline opacity overrides and let drawSphere compute them
         Ns.select("circle").style("opacity", null);
-        Es.classed("hi", false).classed("dim", false);
-        Es.style("opacity", null);
+        if (Es) {
+          Es.classed("hi", false).classed("dim", false);
+          Es.style("opacity", null);
+        }
         drawSphere();
       }
       function applyPinVis() {
@@ -2638,106 +2805,107 @@
         const wasIso = ST.isolate;
         ST.sel.clear();
         ST.isolate = false;
-        clearPathHighlight();
+        clearPathHL();
         applySelVis();
         badge();
-        document.getElementById("node-detail").style.display = "none";
-        document.getElementById("multi-detail").style.display = "none";
+        document.getElementById("nd").style.display = "none";
+        document.getElementById("md").style.display = "none";
         document
-          .querySelectorAll(".node-list-item")
+          .querySelectorAll(".nli")
           .forEach((e) => e.classList.remove("active"));
         if (wasIso) rebuild();
       }
       function badge() {
-        const el = document.getElementById("sel-badge"),
+        const el = document.getElementById("spath"),
           n = ST.sel.size;
-        // Don't overwrite the path badge if a path is active
         if (PATH_HL.nodes.size > 0) return;
         el.style.display = n ? "block" : "none";
         if (n) {
-          const isolateLabel = ST.isolate
-            ? "Show All Nodes"
-            : "Only These Nodes";
-          el.style.maxWidth = "";
-          el.style.whiteSpace = "";
-          el.style.lineHeight = "";
-          el.innerHTML =
-            `<span style="color:var(--accent3)">${n} node${n > 1 ? "s" : ""} selected</span>` +
-            ` <span id="btn-isolate-quick" style="margin-left:8px;text-decoration:underline;cursor:pointer;color:var(--accent);font-size:9px">[${isolateLabel}]</span>` +
-            ` <span id="btn-clear-sel-quick" style="margin-left:4px;text-decoration:underline;cursor:pointer;color:var(--accent2);font-size:9px">[✕ clear]</span>`;
-          document.getElementById("btn-isolate-quick").onclick = (e) => {
+          const isoLbl = ST.isolate ? "Show All" : "Only Selected";
+          el.innerHTML = `<span style="color:var(--c3)">${n} node${n > 1 ? "s" : ""} selected</span> <span id="biq" style="margin-left:8px;text-decoration:underline;cursor:pointer;color:var(--c1);font-size:8px">[${isoLbl}]</span> <span id="bcq" style="margin-left:4px;text-decoration:underline;cursor:pointer;color:var(--c2);font-size:8px">[✕ clear]</span>`;
+          document.getElementById("biq").onclick = (e) => {
             e.stopPropagation();
             ST.isolate = !ST.isolate;
             rebuild();
             badge();
           };
-          document.getElementById("btn-clear-sel-quick").onclick = (e) => {
+          document.getElementById("bcq").onclick = (e) => {
             e.stopPropagation();
             clearSel();
           };
         }
       }
 
-      // ── LABELS ──────────────────────────────────────────────────
-      function lblClass(d) {
+      /* ── LABELS ── */
+      function lblCls(d) {
         const top = !ST.topOnly || (d[ST.opts.sz] || 0) >= q85;
-        return "n-label" + (ST.showLabels && top ? "" : " hidden");
+        return "nlbl" + (ST.showLabels && top ? "" : " h");
       }
       function applyLabels() {
-        if (Ls) Ls.attr("class", (d) => lblClass(d));
+        if (Ls) Ls.attr("class", (d) => lblCls(d));
       }
 
-      // ── TOOLTIP ─────────────────────────────────────────────────
-      function showTooltip(ev, d) {
-        const tt = document.getElementById("tooltip");
+      /* ── TOOLTIP ── */
+      function showTT(ev, d) {
+        const tt = document.getElementById("ttp");
         tt.style.display = "block";
-        tt.innerHTML = `<div class="tt-name">${d.id}</div><div class="tt-role">${d.inferred_role || "—"}</div><div class="tt-row"><span class="tt-key">Community</span><span class="tt-val">${d.community ?? "—"}</span></div><div class="tt-row"><span class="tt-key">PageRank</span><span class="tt-val">${(d.pagerank || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Betweenness</span><span class="tt-val">${(d.betweenness || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Eigenvector</span><span class="tt-val">${(d.eigenvector || 0).toFixed(5)}</span></div><div class="tt-row"><span class="tt-key">Clustering</span><span class="tt-val">${(d.clustering || 0).toFixed(4)}</span></div><div class="tt-row"><span class="tt-key">Sent / Recv</span><span class="tt-val">${(d.sent || 0).toLocaleString()} / ${(d.received || 0).toLocaleString()}</span></div><div class="tt-row"><span class="tt-key">Contacts</span><span class="tt-val">${d.unique_contacts || 0}</span></div><div class="tt-hint">Click · Shift+click multi · Dbl-click pin</div>`;
+        const dp = ENODE[d.id] || {};
+        const pi = dp.overall_power_index || d.power_level_heuristic * 10 || 0;
+        const piC = piColor(pi);
+        const frb = dp.french_and_raven_bases || {};
+        tt.innerHTML = `<div class="tn">${d.id}</div><div class="tr">${dp.inferred_informal_role || d.inferred_role || "—"}</div>
+<div class="tpow"><div class="tpow-lbl">Power Index</div><div style="display:flex;align-items:center;gap:6px"><div class="tpow-bar" style="flex:1"><div class="tpow-fill" style="width:${pi}%;background:${piC}"></div></div><span style="font-family:var(--font-mono);font-size:10px;color:${piC};font-weight:700">${pi}</span></div></div>
+<div class="trow"><span class="tk2">Community</span><span class="tv">${d.community ?? "—"}</span></div>
+<div class="trow"><span class="tk2">PageRank</span><span class="tv">${(d.pagerank || 0).toFixed(5)}</span></div>
+<div class="trow"><span class="tk2">Betweenness</span><span class="tv">${(d.betweenness || 0).toFixed(5)}</span></div>
+<div class="trow"><span class="tk2">Sent/Recv</span><span class="tv">${(d.sent || 0).toLocaleString()} / ${(d.received || 0).toLocaleString()}</span></div>
+${Object.keys(frb).length ? `<div style="margin-top:5px;font-size:7px;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">F&R Bases</div><div class="trow"><span class="tk2">Expert</span><span class="tv" style="color:#00d4ff">${frb.expert_power || 0}/10</span></div><div class="trow"><span class="tk2">Legitimate</span><span class="tv" style="color:#ffc13d">${frb.legitimate_power || 0}/10</span></div><div class="trow"><span class="tk2">Coercive</span><span class="tv" style="color:#ff3d5a">${frb.coercive_power || 0}/10</span></div>` : ""}
+<div class="th">Click · Shift+click multi · Dbl-click pin</div>`;
         moveTT(ev);
       }
       function moveTT(ev) {
-        const tt = document.getElementById("tooltip"),
+        const tt = document.getElementById("ttp"),
           r = document.getElementById("main").getBoundingClientRect();
         let x = ev.clientX - r.left + 14,
           y = ev.clientY - r.top - 12;
-        if (x + 244 > r.width) x -= 256;
-        if (y + 225 > r.height) y = r.height - 230;
+        if (x + 250 > r.width) x -= 262;
+        if (y + 320 > r.height) y = r.height - 325;
         tt.style.left = x + "px";
         tt.style.top = y + "px";
       }
       function hideTT() {
-        document.getElementById("tooltip").style.display = "none";
+        document.getElementById("ttp").style.display = "none";
       }
-      function escHtml(v) {
-        return String(v == null ? "" : v)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
-      }
-      // ── FOCUS NODE ──────────────────────────────────────────────
+
+      /* ── FOCUS NODE ── */
       function focusNode(d) {
-        // Auto-switch to "Selected" tab
-        const TABS = ["overview", "analytics", "selected"];
-        TABS.forEach((t) => {
-          document
-            .getElementById(`rtab-${t}`)
-            .classList.toggle("active", t === "selected");
-          document.getElementById(`tab-${t}`).style.display =
-            t === "selected" ? "block" : "none";
-        });
-        document.getElementById("node-detail").style.display = "block";
-        document.getElementById("multi-detail").style.display = "none";
+        switchTab("sl");
+        document.getElementById("nd").style.display = "block";
+        document.getElementById("md").style.display = "none";
         document
-          .querySelectorAll(".node-list-item")
+          .querySelectorAll(".nli")
           .forEach((e) => e.classList.remove("active"));
         const li = document.getElementById("nli-" + d.id);
         if (li) {
           li.classList.add("active");
           li.scrollIntoView({ block: "nearest" });
         }
+
+        const dp = ENODE[d.id] || {};
+        const pi = dp.overall_power_index || d.power_level_heuristic * 10 || 0;
+        const piC = piColor(pi);
+        const frb = dp.french_and_raven_bases || {};
+        const style = dp.communication_style || "—";
+        const infRole = dp.inferred_informal_role || d.inferred_role || "—";
+
         document.getElementById("dd-name").textContent = d.id;
-        document.getElementById("dd-role").textContent = d.inferred_role || "—";
+        document.getElementById("dd-role").textContent =
+          infRole + " · " + style;
+        document.getElementById("dd-pi").textContent = pi;
+        document.getElementById("dd-pi").style.color = piC;
+        document.getElementById("dd-pibar").style.width = pi + "%";
+
+        // Metrics grid
         const mets = [
           { l: "PageRank", v: (d.pagerank || 0).toFixed(5) },
           { l: "Betweenness", v: (d.betweenness || 0).toFixed(5) },
@@ -2746,14 +2914,60 @@
           { l: "Sent", v: (d.sent || 0).toLocaleString() },
           { l: "Received", v: (d.received || 0).toLocaleString() },
           { l: "Contacts", v: d.unique_contacts || 0 },
-          { l: "Months Active", v: d.months_active || 0 },
+          {
+            l: "Out/In Ratio",
+            v: (d.out_in_ratio || d.stats?.out_in_ratio || 0).toFixed(2),
+          },
         ];
-        document.getElementById("dd-metrics").innerHTML = mets
+        document.getElementById("dd-met").innerHTML = mets
           .map(
             (m) =>
-              `<div class="metric-card"><div class="metric-val">${m.v}</div><div class="metric-lbl">${m.l}</div></div>`,
+              `<div class="mc"><div class="mv">${m.v}</div><div class="ml">${m.l}</div></div>`,
           )
           .join("");
+
+        // French & Raven power bars
+        if (Object.keys(frb).length) {
+          const frbEl = document.getElementById("dd-frb");
+          const frDef = [
+            { key: "expert_power", lbl: "Expert", col: "#00d4ff" },
+            { key: "referent_power", lbl: "Referent", col: "#3dff9a" },
+            { key: "legitimate_power", lbl: "Legitimate", col: "#ffc13d" },
+            { key: "coercive_power", lbl: "Coercive", col: "#ff3d5a" },
+          ];
+          frbEl.innerHTML =
+            `<div style="font-size:8px;color:var(--c3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;font-weight:600">French &amp; Raven Power Bases</div>` +
+            frDef
+              .map(
+                (f) =>
+                  `<div class="fr-row"><span class="fr-lbl" style="color:${f.col}">${f.lbl}</span><div class="fr-bar"><div class="fr-fill" style="width:${(frb[f.key] || 0) * 10}%;background:${f.col}88"></div></div><span class="fr-val">${frb[f.key] || 0}</span></div>`,
+              )
+              .join("");
+        } else {
+          document.getElementById("dd-frb").innerHTML = "";
+        }
+
+        // Evidence Quotes
+        const quotes = dp.evidence_quotes || [];
+        if (quotes.length) {
+          document.getElementById("dd-eq").style.display = "block";
+          document.getElementById("dd-quotes").innerHTML = quotes
+            .map((q) => `<div class="eq-item">${q}</div>`)
+            .join("");
+        } else {
+          document.getElementById("dd-eq").style.display = "none";
+        }
+
+        // LLM Analysis
+        if (dp.comprehensive_analysis) {
+          document.getElementById("dd-an").style.display = "block";
+          document.getElementById("dd-analysis").textContent =
+            dp.comprehensive_analysis;
+        } else {
+          document.getElementById("dd-an").style.display = "none";
+        }
+
+        // Neighbours
         const nbrs = ED.filter((e) => {
           const s = e.source.id != null ? e.source.id : e.source,
             t = e.target.id != null ? e.target.id : e.target;
@@ -2766,15 +2980,15 @@
           })
           .sort((a, b) => b.weight - a.weight)
           .slice(0, 15);
-        document.getElementById("dd-neighbours").innerHTML = nbrs
+        document.getElementById("dd-nbr").innerHTML = nbrs
           .map(
             (n) =>
-              `<div class="nbr-item" data-id="${n.other}"><span>${n.other.split("@")[0]}</span><span class="nbr-weight">${n.weight.toFixed(1)}</span></div>`,
+              `<div class="nitem" data-id="${n.other}"><span>${n.other.split("@")[0]}</span><span style="color:var(--muted2)">${n.weight.toFixed(1)}</span></div>`,
           )
           .join("");
         document
-          .getElementById("dd-neighbours")
-          .querySelectorAll(".nbr-item")
+          .getElementById("dd-nbr")
+          .querySelectorAll(".nitem")
           .forEach((el) =>
             el.addEventListener("click", () => focusById(el.dataset.id)),
           );
@@ -2790,51 +3004,37 @@
         panTo(d);
       }
       function panTo(d) {
-        // Rotate sphere so node d appears at the front (z = +R)
         if (d._sx == null) return;
-        const cur = normalize3(matVec(SPHERE_ROT, [d._sx, d._sy, d._sz]));
-        const cosAngle = Math.min(1, Math.max(-1, cur[2]));
-        const angle = Math.acos(cosAngle);
+        const cur = n3(matVec(SPHERE_ROT, [d._sx, d._sy, d._sz]));
+        const cosA = Math.min(1, Math.max(-1, cur[2]));
+        const angle = Math.acos(cosA);
         if (angle < 0.01) return;
         let ax = cross3(cur, [0, 0, 1]);
-        if (Math.hypot(ax[0], ax[1], ax[2]) < 0.001) {
-          // cur is [0,0,1] or [0,0,-1]. angle 0 handled above.
-          // if angle ~ PI, pick any ortho axis
-          ax = [1, 0, 0];
-        }
-        ax = normalize3(ax);
+        if (Math.hypot(ax[0], ax[1], ax[2]) < 0.001) ax = [1, 0, 0];
+        ax = n3(ax);
         const steps = 30;
         let step = 0;
-        const partRot = rotAxisAngle(ax[0], ax[1], ax[2], angle / steps);
+        const pr = rotAA(ax[0], ax[1], ax[2], angle / steps);
         function frame() {
           if (step++ >= steps) return;
-          SPHERE_ROT = matMul(partRot, SPHERE_ROT);
+          SPHERE_ROT = matMul(pr, SPHERE_ROT);
           drawSphere();
           requestAnimationFrame(frame);
         }
         frame();
       }
 
-      // ── MULTI ────────────────────────────────────────────────────
-      function showMultiPanel() {
+      /* ── MULTI ── */
+      function showMulti() {
         const n = ST.sel.size;
         if (n < 2) {
-          document.getElementById("multi-detail").style.display = "none";
+          document.getElementById("md").style.display = "none";
           return;
         }
-        // Auto-switch to "Selected" tab
-        const TABS = ["overview", "analytics", "selected"];
-        TABS.forEach((t) => {
-          document
-            .getElementById(`rtab-${t}`)
-            .classList.toggle("active", t === "selected");
-          document.getElementById(`tab-${t}`).style.display =
-            t === "selected" ? "block" : "none";
-        });
-        document.getElementById("node-detail").style.display = "none";
-        document.getElementById("multi-detail").style.display = "block";
-        document.getElementById("multi-title").textContent =
-          `${n} nodes selected`;
+        switchTab("sl");
+        document.getElementById("nd").style.display = "none";
+        document.getElementById("md").style.display = "block";
+        document.getElementById("md-t").textContent = `${n} nodes selected`;
         const sel = ND.filter((d) => ST.sel.has(d.id)),
           avg = (k) =>
             sel.length
@@ -2844,109 +3044,165 @@
               : "—",
           sum = (k) =>
             sel.reduce((s, d) => s + (d[k] || 0), 0).toLocaleString();
-        document.getElementById("multi-metrics").innerHTML = [
+        const avgPi = sel.length
+          ? (
+              sel.reduce((s, d) => s + (d.power_index || 0), 0) / sel.length
+            ).toFixed(1)
+          : "—";
+        document.getElementById("md-m").innerHTML = [
           { l: "Avg PageRank", v: avg("pagerank") },
           { l: "Avg Betweenness", v: avg("betweenness") },
+          { l: "Avg Power Index", v: avgPi },
           { l: "Total Sent", v: sum("sent") },
-          { l: "Total Received", v: sum("received") },
         ]
           .map(
             (m) =>
-              `<div class="metric-card"><div class="metric-val" style="font-size:12px">${m.v}</div><div class="metric-lbl">${m.l}</div></div>`,
+              `<div class="mc"><div class="mv" style="font-size:11px">${m.v}</div><div class="ml">${m.l}</div></div>`,
           )
           .join("");
-
-        // Update the focus-subgraph / isolate button in the panel
-        const focusBtn = document.getElementById("btn-focus-sub");
-        if (focusBtn) {
-          focusBtn.textContent = ST.isolate
-            ? "⊡ Show All Nodes"
-            : "⊠ Only Selected";
-        }
+        const bfs = document.getElementById("bfs");
+        if (bfs)
+          bfs.textContent = ST.isolate ? "⊡ Show All Nodes" : "⊠ Only Selected";
       }
 
-      // ── FIT ──────────────────────────────────────────────────────
+      /* ── TAB SWITCH ── */
+      function switchTab(which) {
+        ["ov", "an", "sl"].forEach((t) => {
+          document
+            .getElementById("rt-" + t)
+            .classList.toggle("active", t === which);
+          document.getElementById("tab-" + t).style.display =
+            t === which ? "block" : "none";
+        });
+      }
+
+      /* ── FIT ── */
       function fitGraph() {
         if (!ND.length) return;
-        // Reset rotation and let sphere radius re-fit
         SPHERE_ROT = [
           [1, 0, 0],
           [0, 1, 0],
           [0, 0, 1],
         ];
-        const svg = d3.select("#network-svg");
+        const svg = d3.select("#nsv");
         const W = svg.node().clientWidth,
           H = svg.node().clientHeight;
         _sphCx = W / 2;
         _sphCy = H / 2;
         _sphR = (Math.min(W, H) * ST.opts.dist) / 100;
-        svg.call(ZM.transform, d3.zoomIdentity);
         drawSphere();
       }
 
-      // ── PNG ──────────────────────────────────────────────────────
-      function exportPNG() {
-        const svgOriginal = document.getElementById("network-svg");
-        const svgEl = svgOriginal.cloneNode(true);
-        svgEl.setAttribute("width", svgOriginal.clientWidth);
-        svgEl.setAttribute("height", svgOriginal.clientHeight);
+      /* ── EGO ── */
+      function toggleEgo() {
+        if (ST.egoNode) {
+          ST.egoNode = null;
+          document.getElementById("tb-ego").classList.remove("active");
+          rebuild();
+          return;
+        }
+        if (ST.sel.size !== 1) {
+          showPathBadge(
+            '<span style="color:var(--c4)">Select exactly 1 node, then press E for ego view</span>',
+          );
+          setTimeout(() => {
+            if (!ST.sel.size)
+              document.getElementById("spath").style.display = "none";
+          }, 2500);
+          return;
+        }
+        const egoId = [...ST.sel][0];
+        ST.egoNode = egoId;
+        document.getElementById("tb-ego").classList.add("active");
+        rebuild();
+        // Show ego badge
+        const en = RAW.graph_data?.nodes?.find((n) => n.id === egoId);
+        if (!en) return;
+        const neighbors = new Set();
+        (RAW.graph_data?.edges || []).forEach((e) => {
+          const s = e.source?.id ?? e.source,
+            t = e.target?.id ?? e.target;
+          if (s === egoId) neighbors.add(t);
+          if (t === egoId) neighbors.add(s);
+        });
+        document.getElementById("spath").innerHTML =
+          `<span style="color:var(--c1)">👤 Ego: ${en.label || egoId.split("@")[0]}</span> <span style="color:var(--muted2);font-size:8px">· Direct neighbors: <b style="color:var(--text)">${neighbors.size}</b></span> <span id="bex" style="margin-left:8px;text-decoration:underline;cursor:pointer;color:var(--c2);font-size:8px">[✕ Exit Ego]</span>`;
+        document.getElementById("spath").style.display = "block";
+        const bex = document.getElementById("bex");
+        if (bex)
+          bex.onclick = (e) => {
+            e.stopPropagation();
+            toggleEgo();
+          };
+      }
 
-        // Embed styles
+      /* ── EXPORTS ── */
+      function exportPNG() {
+        const so = document.getElementById("nsv");
+        const svgEl = so.cloneNode(true);
+        svgEl.setAttribute("width", so.clientWidth);
+        svgEl.setAttribute("height", so.clientHeight);
         const styles = Array.from(document.styleSheets)
-          .flatMap((sheet) => {
+          .flatMap((s) => {
             try {
-              return Array.from(sheet.cssRules);
-            } catch (e) {
+              return Array.from(s.cssRules);
+            } catch {
               return [];
             }
           })
-          .map((rule) => rule.cssText)
+          .map((r) => r.cssText)
           .join("\n");
         const styleEl = document.createElement("style");
         styleEl.textContent = styles;
         svgEl.prepend(styleEl);
-
         const s = new XMLSerializer().serializeToString(svgEl),
           c = document.createElement("canvas");
-        c.width = svgOriginal.clientWidth * 2;
-        c.height = svgOriginal.clientHeight * 2;
+        c.width = so.clientWidth * 2;
+        c.height = so.clientHeight * 2;
         const ctx = c.getContext("2d");
-        const bg =
-          getComputedStyle(document.documentElement).getPropertyValue("--bg") ||
-          "#05070d";
-        ctx.fillStyle = bg.trim();
+        ctx.fillStyle = "#06080f";
         ctx.fillRect(0, 0, c.width, c.height);
-
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0, c.width, c.height);
           const a = document.createElement("a");
-          a.download = `enron-sna-${new Date().getTime()}.png`;
+          a.download = `enron-sna-${Date.now()}.png`;
           a.href = c.toDataURL("image/png");
           a.click();
         };
         img.src =
           "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(s)));
       }
+      function exportJSON() {
+        const blob = new Blob(
+          [JSON.stringify({ nodes: ND, edges: ED }, null, 2)],
+          { type: "application/json" },
+        );
+        const a = document.createElement("a");
+        a.download = "enron-sna-export.json";
+        a.href = URL.createObjectURL(blob);
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
 
-      // ── SEARCH ──────────────────────────────────────────────────
+      /* ── SEARCH ── */
       function setupSearch() {
-        const findNodeId = (raw) => {
+        const findId = (raw) => {
           const q = (raw || "").trim().toLowerCase();
           if (!q) return null;
-          const exact = ND.find(
+          const e = ND.find(
             (n) =>
               n.id.toLowerCase() === q ||
               (n.label || "").toLowerCase() === q ||
               n.id.split("@")[0].toLowerCase() === q,
           );
-          if (exact) return exact.id;
-          const first = ND.find(
+          if (e) return e.id;
+          const f = ND.find(
             (n) =>
               n.id.toLowerCase().includes(q) ||
               (n.label || "").toLowerCase().includes(q),
           );
-          return first ? first.id : null;
+          return f ? f.id : null;
         };
         const attachSearch = (inp, res, onPick) => {
           inp.addEventListener("input", () => {
@@ -2968,308 +3224,235 @@
             res.innerHTML = hits
               .map(
                 (n) =>
-                  `<div class="search-item" data-id="${n.id}">${n.label || n.id.split("@")[0]}<span style="color:var(--muted);font-size:8px"> ${n.id}</span></div>`,
+                  `<div class="sri" data-id="${n.id}">${n.label || n.id.split("@")[0]}<span style="color:var(--muted);font-size:7px"> ${n.id}</span></div>`,
               )
               .join("");
-            res.querySelectorAll(".search-item").forEach((el) =>
+            res.querySelectorAll(".sri").forEach((el) =>
               el.addEventListener("click", () => {
-                const id = el.dataset.id;
-                const node = ND.find((n) => n.id === id);
-                onPick(id, node);
+                onPick(
+                  el.dataset.id,
+                  ND.find((n) => n.id === el.dataset.id),
+                );
                 res.style.display = "none";
               }),
             );
           });
         };
-
-        const inp = document.getElementById("node-search");
-        const res = document.getElementById("search-results");
+        const inp = document.getElementById("nsrch"),
+          res = document.getElementById("nsr");
         attachSearch(inp, res, (id) => {
           focusById(id);
           inp.value = "";
         });
-
-        const fromInp = document.getElementById("path-from");
-        const fromRes = document.getElementById("path-from-results");
-        const toInp = document.getElementById("path-to");
-        const toRes = document.getElementById("path-to-results");
-
-        attachSearch(fromInp, fromRes, (id, node) => {
+        const pf = document.getElementById("pf"),
+          pfr = document.getElementById("pfr"),
+          pt2 = document.getElementById("pt2"),
+          ptr = document.getElementById("ptr");
+        attachSearch(pf, pfr, (id, n) => {
           PATH_FROM_ID = id;
-          fromInp.value = node?.label || id.split("@")[0];
+          pf.value = n?.label || id.split("@")[0];
         });
-        attachSearch(toInp, toRes, (id, node) => {
+        attachSearch(pt2, ptr, (id, n) => {
           PATH_TO_ID = id;
-          toInp.value = node?.label || id.split("@")[0];
+          pt2.value = n?.label || id.split("@")[0];
         });
-
         const runPath = () => {
-          const fromId = PATH_FROM_ID || findNodeId(fromInp.value);
-          const toId = PATH_TO_ID || findNodeId(toInp.value);
-          if (!fromId || !toId) return;
-          PATH_FROM_ID = fromId;
-          PATH_TO_ID = toId;
-          showPathBetween(fromId, toId);
+          const fid = PATH_FROM_ID || findId(pf.value),
+            tid = PATH_TO_ID || findId(pt2.value);
+          if (!fid || !tid) return;
+          PATH_FROM_ID = fid;
+          PATH_TO_ID = tid;
+          showPathBetween(fid, tid);
         };
-
-        fromInp.addEventListener("input", () => (PATH_FROM_ID = null));
-        toInp.addEventListener("input", () => (PATH_TO_ID = null));
-        fromInp.addEventListener("keydown", (e) => {
+        pf.addEventListener("input", () => (PATH_FROM_ID = null));
+        pt2.addEventListener("input", () => (PATH_TO_ID = null));
+        pf.addEventListener("keydown", (e) => {
           if (e.key === "Enter") runPath();
         });
-        toInp.addEventListener("keydown", (e) => {
+        pt2.addEventListener("keydown", (e) => {
           if (e.key === "Enter") runPath();
         });
-        document
-          .getElementById("btn-path-find")
-          .addEventListener("click", runPath);
-        document
-          .getElementById("btn-path-clear")
-          .addEventListener("click", () => {
-            PATH_FROM_ID = null;
-            PATH_TO_ID = null;
-            fromInp.value = "";
-            toInp.value = "";
-            clearPathHighlight();
-            document.getElementById("sel-badge").style.display = "none";
-          });
-
+        document.getElementById("bpf").addEventListener("click", runPath);
+        document.getElementById("bpc").addEventListener("click", () => {
+          PATH_FROM_ID = null;
+          PATH_TO_ID = null;
+          pf.value = "";
+          pt2.value = "";
+          clearPathHL();
+          document.getElementById("spath").style.display = "none";
+        });
         document.addEventListener("click", (e) => {
-          if (!e.target.closest(".search-wrap")) {
+          if (!e.target.closest(".sw")) {
             res.style.display = "none";
-            fromRes.style.display = "none";
-            toRes.style.display = "none";
+            pfr.style.display = "none";
+            ptr.style.display = "none";
           }
         });
       }
 
-      // ── CONTROLS ────────────────────────────────────────────────
+      /* ── UPDATE LEGEND PANEL ── */
+      function updateLegendPanel() {
+        const cm = ST.colorMode;
+        document.getElementById("cp").style.display =
+          cm === "community" ? "block" : "none";
+        document.getElementById("rp").style.display =
+          cm === "role" ? "block" : "none";
+        document.getElementById("pp").style.display =
+          cm === "power" ? "block" : "none";
+      }
+
+      /* ── REBUILD ── */
       const db = (fn, ms, k) => {
         clearTimeout(DT[k]);
         DT[k] = setTimeout(fn, ms);
       };
-      const rebuild = () => {
-        if (RAW.graph_data) {
-          let data;
-          if (ST.egoNode) {
-            // Ego-network mode: show ego node + 1-hop neighbors
-            const egoId = ST.egoNode;
-            const neighbors = new Set([egoId]);
-            RAW.graph_data.edges.forEach(e => {
-              const s = e.source?.id ?? e.source;
-              const t = e.target?.id ?? e.target;
-              if (s === egoId) neighbors.add(t);
-              if (t === egoId) neighbors.add(s);
-            });
-            data = {
-              nodes: RAW.graph_data.nodes.filter(n => neighbors.has(n.id)),
-              edges: RAW.graph_data.edges.filter(e => {
-                const s = e.source?.id ?? e.source;
-                const t = e.target?.id ?? e.target;
-                return neighbors.has(s) && neighbors.has(t);
-              }),
-            };
-          } else if (ST.isolate && ST.sel.size > 0) {
-            data = {
-              nodes: RAW.graph_data.nodes.filter((n) => ST.sel.has(n.id)),
-              edges: RAW.graph_data.edges.filter((e) => {
-                const s = e.source?.id ?? e.source;
-                const t = e.target?.id ?? e.target;
-                return ST.sel.has(s) && ST.sel.has(t);
-              }),
-            };
-          } else {
-            data = RAW.graph_data;
-          }
-          buildNetwork(data, ST.opts);
-          // Reapply selection visuals after rebuild
-          applySelVis();
-          badge();
-          // Update ego badge
-          updateEgoBadge();
-        }
-      };
-
-      function toggleEgoNetwork() {
+      function rebuild() {
+        if (!RAW.graph_data) return;
+        let data;
         if (ST.egoNode) {
-          // Exit ego mode
-          ST.egoNode = null;
-          document.getElementById("tb-ego").classList.remove("active");
-          rebuild();
-          return;
-        }
-        // Enter ego mode: need exactly 1 selected node
-        if (ST.sel.size !== 1) {
-          const el = document.getElementById("sel-badge");
-          el.style.display = "block";
-          el.innerHTML = '<span style="color:var(--amber)">Select exactly 1 node, then press E for ego view</span>';
-          setTimeout(() => { if (!ST.sel.size) el.style.display = "none"; }, 2500);
-          return;
-        }
-        const egoId = [...ST.sel][0];
-        ST.egoNode = egoId;
-        document.getElementById("tb-ego").classList.add("active");
-        rebuild();
-      }
-
-      function updateEgoBadge() {
-        if (!ST.egoNode) return;
-        const el = document.getElementById("sel-badge");
-        const egoNode = RAW.graph_data.nodes.find(n => n.id === ST.egoNode);
-        if (!egoNode) return;
-        const neighbors = new Set();
-        RAW.graph_data.edges.forEach(e => {
-          const s = e.source?.id ?? e.source;
-          const t = e.target?.id ?? e.target;
-          if (s === ST.egoNode) neighbors.add(t);
-          if (t === ST.egoNode) neighbors.add(s);
-        });
-        // Count 2-hop neighbors
-        const twoHop = new Set();
-        neighbors.forEach(nid => {
-          RAW.graph_data.edges.forEach(e => {
-            const s = e.source?.id ?? e.source;
-            const t = e.target?.id ?? e.target;
-            if (s === nid && !neighbors.has(t) && t !== ST.egoNode) twoHop.add(t);
-            if (t === nid && !neighbors.has(s) && s !== ST.egoNode) twoHop.add(s);
+          const eid = ST.egoNode,
+            nb = new Set([eid]);
+          (RAW.graph_data.edges || []).forEach((e) => {
+            const s = e.source?.id ?? e.source,
+              t = e.target?.id ?? e.target;
+            if (s === eid) nb.add(t);
+            if (t === eid) nb.add(s);
           });
-        });
-        el.style.display = "block";
-        el.style.maxWidth = "480px";
-        el.style.whiteSpace = "normal";
-        el.style.lineHeight = "1.5";
-        el.innerHTML =
-          `<span style="color:var(--accent)">👤 Ego: ${egoNode.label}</span> ` +
-          `<span style="color:var(--muted);font-size:9px;margin-left:6px;">Direct: <b style="color:var(--text)">${neighbors.size - 1}</b> · Indirect (2-hop): <b style="color:var(--text)">${twoHop.size}</b> · Role: <b style="color:var(--text)">${egoNode.inferred_role}</b></span> ` +
-          `<span id="btn-exit-ego" style="margin-left:8px;text-decoration:underline;cursor:pointer;color:var(--accent2);font-size:9px">[✕ Exit Ego]</span>`;
-        document.getElementById("btn-exit-ego").onclick = (e) => {
-          e.stopPropagation();
-          toggleEgoNetwork();
-        };
+          data = {
+            nodes: RAW.graph_data.nodes.filter((n) => nb.has(n.id)),
+            edges: RAW.graph_data.edges.filter((e) => {
+              const s = e.source?.id ?? e.source,
+                t = e.target?.id ?? e.target;
+              return nb.has(s) && nb.has(t);
+            }),
+          };
+        } else if (ST.isolate && ST.sel.size > 0) {
+          data = {
+            nodes: RAW.graph_data.nodes.filter((n) => ST.sel.has(n.id)),
+            edges: RAW.graph_data.edges.filter((e) => {
+              const s = e.source?.id ?? e.source,
+                t = e.target?.id ?? e.target;
+              return ST.sel.has(s) && ST.sel.has(t);
+            }),
+          };
+        } else {
+          data = RAW.graph_data;
+        }
+        buildNetwork(data, ST.opts);
+        applySelVis();
+        badge();
       }
 
+      /* ── CONTROLS ── */
       function setupControls() {
-        const wsl = document.getElementById("slider-weight");
-        let _rafW = null;
-        wsl.addEventListener("input", function () {
-          const v = Math.pow(10, +this.value / 30) - 1; // log slider with true zero minimum
-          document.getElementById("weight-val").textContent =
+        let _rw = null;
+        document.getElementById("sw2").addEventListener("input", function () {
+          const v = Math.pow(10, +this.value / 30) - 1;
+          document.getElementById("wv").textContent =
             v < 1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : Math.round(v);
           ST.opts.minW = v;
-          if (_rafW) cancelAnimationFrame(_rafW);
-          _rafW = requestAnimationFrame(() => { db(rebuild, 20, "w"); _rafW = null; });
+          if (_rw) cancelAnimationFrame(_rw);
+          _rw = requestAnimationFrame(() => {
+            db(rebuild, 20, "w");
+            _rw = null;
+          });
         });
-        document
-          .getElementById("slider-nodes")
-          .addEventListener("input", function () {
-            document.getElementById("nodes-val").textContent = this.value;
-            ST.opts.maxN = +this.value;
-            db(rebuild, 40, "n");
-          });
-        // Sphere radius slider
-        document
-          .getElementById("slider-dist")
-          .addEventListener("input", function () {
-            const v = +this.value;
-            document.getElementById("dist-val").textContent = v;
-            ST.opts.dist = v;
-            if (ND.length) {
-              const svg = d3.select("#network-svg");
-              _sphR =
-                (Math.min(svg.node().clientWidth, svg.node().clientHeight) *
-                  v) /
-                100;
-              drawSphere();
-            }
-          });
-        // Spin speed slider
-        document
-          .getElementById("slider-rep")
-          .addEventListener("input", function () {
-            const v = +this.value;
-            document.getElementById("rep-val").textContent = v;
-            _spinSpeed = v * 0.001;
-          });
-        document.getElementById("sel-size").addEventListener("change", (e) => {
+        document.getElementById("smn").addEventListener("input", function () {
+          document.getElementById("mnv").textContent = this.value;
+          ST.opts.maxN = +this.value;
+          db(rebuild, 40, "n");
+        });
+        document.getElementById("sdr").addEventListener("input", function () {
+          const v = +this.value;
+          document.getElementById("drv").textContent = v;
+          ST.opts.dist = v;
+          if (ND.length) {
+            const svg = d3.select("#nsv");
+            _sphR =
+              (Math.min(svg.node().clientWidth, svg.node().clientHeight) * v) /
+              100;
+            drawSphere();
+          }
+        });
+        document.getElementById("ssp").addEventListener("input", function () {
+          const v = +this.value;
+          document.getElementById("spv").textContent = v;
+          _spinSpeed = v * 0.001;
+        });
+        document.getElementById("ssz").addEventListener("change", (e) => {
           ST.opts.sz = e.target.value;
-          refreshVisuals();
+          refreshVis();
           renderTopList();
         });
-        document.getElementById("sel-color").addEventListener("change", (e) => {
-          ST.opts.col = e.target.value;
-          refreshVisuals();
-          updateLeftLegend();
+
+        // View mode buttons (community / power / role)
+        ["comm", "power", "role"].forEach((m) => {
+          document.getElementById("vm-" + m).addEventListener("click", () => {
+            ["comm", "power", "role"].forEach((x) =>
+              document
+                .getElementById("vm-" + x)
+                .classList.toggle("active", x === m),
+            );
+            ST.colorMode = m === "comm" ? "community" : m;
+            updateLegendPanel();
+            refreshVis();
+          });
         });
 
-        // display toggles
-        document
-          .getElementById("tog-labels")
-          .addEventListener("change", (e) => {
-            ST.showLabels = e.target.checked;
-            document
-              .getElementById("tb-labels")
-              .classList.toggle("active", ST.showLabels);
-            applyLabels();
-          });
-        document
-          .getElementById("tog-toplabels")
-          .addEventListener("change", (e) => {
-            ST.topOnly = e.target.checked;
-            applyLabels();
-          });
-        document
-          .getElementById("tog-isolated")
-          .addEventListener("change", (e) => {
-            ST.showIsolated = e.target.checked;
-            rebuild();
-          });
-        document
-          .getElementById("tog-edgewidth")
-          .addEventListener("change", (e) => {
-            ST.edgeByW = e.target.checked;
-            if (Es && ED.length) {
-              const wv = ED.map((f) => f.weight || 1),
-                wMin = Math.max(d3.min(wv) || 0.01, 0.01),
-                wMax = d3.max(wv) || 1;
-              const sc = d3
-                .scaleLog()
-                .domain([wMin, wMax])
-                .range([0.35, 3])
-                .clamp(true);
-              Es.attr("stroke-width", (d) =>
-                ST.edgeByW ? sc(d.weight || 1) : 0.6,
-              );
-            } else {
-              rebuild();
-            }
-          });
-
-        // view controls (auto-spin, stop, reset)
-        document.getElementById("btn-play").addEventListener("click", () => {
-          startAutoSpin();
-          document.getElementById("btn-play").classList.add("active");
-          document.getElementById("btn-pause").classList.remove("active");
+        document.getElementById("tl").addEventListener("change", (e) => {
+          ST.showLabels = e.target.checked;
+          document
+            .getElementById("tb-lbl")
+            .classList.toggle("active", ST.showLabels);
+          applyLabels();
         });
-        document.getElementById("btn-pause").addEventListener("click", () => {
-          stopAutoSpin();
-          document.getElementById("btn-pause").classList.add("active");
-          document.getElementById("btn-play").classList.remove("active");
+        document.getElementById("ttl").addEventListener("change", (e) => {
+          ST.topOnly = e.target.checked;
+          applyLabels();
         });
-        document.getElementById("btn-reset").addEventListener("click", () => {
+        document.getElementById("tis").addEventListener("change", (e) => {
+          ST.showIsolated = e.target.checked;
           rebuild();
         });
-        document.getElementById("btn-fit").addEventListener("click", fitGraph);
-        document.getElementById("btn-unpin").addEventListener("click", () => {
+        document.getElementById("tew").addEventListener("change", (e) => {
+          ST.edgeByW = e.target.checked;
+          if (Es && ED.length) {
+            const wv = ED.map((f) => f.weight || 1),
+              wMin = Math.max(d3.min(wv) || 0.01, 0.01),
+              wMax = d3.max(wv) || 1;
+            const sc = d3
+              .scaleLog()
+              .domain([wMin, wMax])
+              .range([0.35, 3])
+              .clamp(true);
+            Es.attr("stroke-width", (d) =>
+              ST.edgeByW ? sc(d.weight || 1) : 0.6,
+            );
+          } else rebuild();
+        });
+
+        document.getElementById("bpl").addEventListener("click", () => {
+          startAutoSpin();
+          document.getElementById("bpl").classList.add("active");
+          document.getElementById("bst").classList.remove("active");
+        });
+        document.getElementById("bst").addEventListener("click", () => {
+          stopAutoSpin();
+          document.getElementById("bst").classList.add("active");
+          document.getElementById("bpl").classList.remove("active");
+        });
+        document.getElementById("brb").addEventListener("click", rebuild);
+        document.getElementById("bft").addEventListener("click", fitGraph);
+        document.getElementById("bup").addEventListener("click", () => {
           ST.pinned.clear();
           applyPinVis();
         });
 
-        // toolbar
-        document.getElementById("tb-select").addEventListener("click", () => {
+        document.getElementById("tb-sel").addEventListener("click", () => {
           ST.mode = "select";
           applyMode();
         });
-        document.getElementById("tb-lasso").addEventListener("click", () => {
+        document.getElementById("tb-las").addEventListener("click", () => {
           ST.mode = ST.mode === "lasso" ? "select" : "lasso";
           applyMode();
         });
@@ -3277,93 +3460,125 @@
           ST.mode = ST.mode === "pan" ? "select" : "pan";
           applyMode();
         });
-        document.getElementById("tb-labels").addEventListener("click", () => {
+        document.getElementById("tb-lbl").addEventListener("click", () => {
           ST.showLabels = !ST.showLabels;
-          document.getElementById("tog-labels").checked = ST.showLabels;
+          document.getElementById("tl").checked = ST.showLabels;
           document
-            .getElementById("tb-labels")
+            .getElementById("tb-lbl")
             .classList.toggle("active", ST.showLabels);
           applyLabels();
         });
         document.getElementById("tb-png").addEventListener("click", exportPNG);
+        document.getElementById("tb-jsn").addEventListener("click", exportJSON);
         document
-          .getElementById("tb-json")
-          .addEventListener("click", exportJSON);
-        document.getElementById("tb-help").addEventListener("click", () => {
-          document.getElementById("kbd-help").classList.toggle("visible");
-        });
-        document.getElementById("tb-ego").addEventListener("click", toggleEgoNetwork);
-
-        // new controls: theme + sidebar collapse + path
-        document
-          .getElementById("btn-theme")
-          .addEventListener("click", () => toggleTheme());
-        document
-          .getElementById("btn-collapse-left")
-          .addEventListener("click", () => toggleSidebar("left"));
-        document
-          .getElementById("btn-collapse-right")
-          .addEventListener("click", () => toggleSidebar("right"));
-        document.getElementById("tb-path").addEventListener("click", () => {
-          const btn = document.getElementById("tb-path");
+          .getElementById("tb-hlp")
+          .addEventListener("click", () =>
+            document.getElementById("kh").classList.toggle("v"),
+          );
+        document.getElementById("tb-ego").addEventListener("click", toggleEgo);
+        document.getElementById("tb-pth").addEventListener("click", () => {
+          const btn = document.getElementById("tb-pth");
           btn.classList.toggle("active");
           if (!btn.classList.contains("active")) {
             PATH_START = null;
-            document.getElementById("sel-badge").style.display = "none";
-            clearPathHighlight();
+            document.getElementById("spath").style.display = "none";
+            clearPathHL();
           }
         });
 
-        // right tab switching (3 tabs)
-        const TABS = ["overview", "analytics", "selected"];
-        TABS.forEach((tab) => {
+        // Theme + sidebar collapse
+        document
+          .getElementById("bth")
+          .addEventListener("click", () =>
+            document.documentElement.classList.toggle("light"),
+          );
+        document.getElementById("bcl").addEventListener("click", () => {
+          const app = document.getElementById("app"),
+            sl = document.getElementById("sl"),
+            btn = document.getElementById("bcl");
+          sl.classList.toggle("collapsed");
+          const c = sl.classList.contains("collapsed");
+          btn.textContent = c ? ">" : "‹";
+          const rc2 = document
+            .getElementById("sr")
+            .classList.contains("collapsed");
+          app.classList.toggle("lc", c && !rc2);
+          app.classList.toggle("bc", c && rc2);
+          app.classList.remove("rc");
+          if (!c && !rc2) {
+            app.classList.remove("lc");
+            app.classList.remove("bc");
+          }
+          setTimeout(() => handleResize(), 320);
+        });
+        document.getElementById("bcr").addEventListener("click", () => {
+          const app = document.getElementById("app"),
+            sr = document.getElementById("sr"),
+            btn = document.getElementById("bcr");
+          sr.classList.toggle("collapsed");
+          const c = sr.classList.contains("collapsed");
+          btn.textContent = c ? "<" : "›";
+          const lc2 = document
+            .getElementById("sl")
+            .classList.contains("collapsed");
+          app.classList.toggle("rc", c && !lc2);
+          app.classList.toggle("bc", c && lc2);
+          app.classList.remove("lc");
+          if (!c && !lc2) {
+            app.classList.remove("rc");
+            app.classList.remove("bc");
+          }
+          setTimeout(() => handleResize(), 320);
+        });
+
+        // Right tabs
+        ["ov", "an", "sl"].forEach((t) => {
           document
-            .getElementById(`rtab-${tab}`)
-            .addEventListener("click", () => {
-              TABS.forEach((t) => {
-                document
-                  .getElementById(`rtab-${t}`)
-                  .classList.toggle("active", t === tab);
-                document.getElementById(`tab-${t}`).style.display =
-                  t === tab ? "block" : "none";
-              });
-            });
+            .getElementById("rt-" + t)
+            .addEventListener("click", () => switchTab(t));
+        });
+
+        // Multi panel
+        document.getElementById("bcs").addEventListener("click", clearSel);
+        document.getElementById("bfs").addEventListener("click", () => {
+          if (ST.sel.size < 1) return;
+          ST.isolate = !ST.isolate;
+          rebuild();
+          badge();
+          const b = document.getElementById("bfs");
+          if (b)
+            b.textContent = ST.isolate ? "⊡ Show All Nodes" : "⊠ Only Selected";
         });
 
         startAutoSpin();
-        document.getElementById("btn-play").classList.add("active");
-
-        // multi panel
-        document
-          .getElementById("btn-clear-sel")
-          .addEventListener("click", clearSel);
-        document
-          .getElementById("btn-focus-sub")
-          .addEventListener("click", () => {
-            if (ST.sel.size < 1) return;
-            // Toggle isolate mode: show only the selected nodes
-            ST.isolate = !ST.isolate;
-            rebuild();
-            badge();
-            // Update button label
-            const focusBtn = document.getElementById("btn-focus-sub");
-            if (focusBtn)
-              focusBtn.textContent = ST.isolate
-                ? "⊡ Show All Nodes"
-                : "⊠ Only Selected";
-          });
+        document.getElementById("bpl").classList.add("active");
       }
+      function handleResize() {
+        const svg = d3.select("#nsv");
+        if (!svg.node()) return;
+        const W = svg.node().clientWidth,
+          H = svg.node().clientHeight;
+        _sphCx = W / 2;
+        _sphCy = H / 2;
+        _sphR = (Math.min(W, H) * ST.opts.dist) / 100;
+        svg.select("#bg-hit").attr("width", W).attr("height", H);
+        drawSphere();
+      }
+      window.addEventListener("resize", () => db(handleResize, 100, "rz"));
 
-      // ── KEYBOARD ────────────────────────────────────────────────
+      /* ── KEYBOARD ── */
       document.addEventListener("keydown", (ev) => {
         if (ev.target.tagName === "INPUT") return;
         if (ev.key === "Escape") {
-          if (ST.egoNode) { toggleEgoNetwork(); return; }
+          if (ST.egoNode) {
+            toggleEgo();
+            return;
+          }
           clearSel();
           ST.mode = "select";
           applyMode();
         }
-        if (ev.key === "e" || ev.key === "E") toggleEgoNetwork();
+        if (ev.key === "e" || ev.key === "E") toggleEgo();
         if (ev.key === "l" || ev.key === "L") {
           ST.mode = ST.mode === "lasso" ? "select" : "lasso";
           applyMode();
@@ -3376,38 +3591,38 @@
         if (ev.key === "f" || ev.key === "F") fitGraph();
         if (ev.key === "h" || ev.key === "H") {
           ST.showLabels = !ST.showLabels;
-          document.getElementById("tog-labels").checked = ST.showLabels;
+          document.getElementById("tl").checked = ST.showLabels;
           document
-            .getElementById("tb-labels")
+            .getElementById("tb-lbl")
             .classList.toggle("active", ST.showLabels);
           applyLabels();
         }
-        if (ev.key === "?") {
-          document.getElementById("kbd-help").classList.toggle("visible");
-        }
+        if (ev.key === "?") document.getElementById("kh").classList.toggle("v");
       });
 
-      // ── BOOTSTRAP ───────────────────────────────────────────────
+      /* ── BOOTSTRAP ── */
       (async () => {
         await loadAll();
-        restoreTheme();
         setLoad("Rendering panels…", 86);
-        await pause(28);
+        await pause(20);
         if (RAW.stats && Object.keys(RAW.stats).length) renderStats(RAW.stats);
         renderCommLegend(RAW.communities);
+        renderRoleLegend();
+        renderPowerLegend();
         renderTopList();
         renderCloud(RAW.keywords);
         renderCommChart(RAW.communities);
-        renderRoleLegend();
+        renderPowerChart();
         renderTimelineChart(RAW.timeline);
         renderDegDistChart(RAW.degree_dist);
+        renderPowerTierBreakdown();
         renderCommStats(RAW.communities);
-        setLoad("Building sphere graph…", 93);
-        await pause(28);
+        setLoad("Building sphere…", 93);
+        await pause(20);
         buildNetwork(RAW.graph_data, ST.opts);
         setupControls();
         setupSearch();
-        updateLeftLegend();
+        updateLegendPanel();
         setLoad("Done", 100);
         await pause(200);
         hideLd();
